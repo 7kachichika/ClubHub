@@ -1,0 +1,114 @@
+:root {
+  --ch-accent: #00b3b3;
+  --ch-accent-soft: rgba(0, 179, 179, 0.14);
+  --ch-surface: #ffffff;
+}
+
+body {
+  background: radial-gradient(circle at top left, rgba(0, 179, 179, 0.26), transparent 55%),
+              radial-gradient(circle at bottom right, rgba(13, 110, 253, 0.18), transparent 55%),
+              #f5f5f7;
+}
+
+.navbar {
+  box-shadow: 0 0.25rem 1.5rem rgba(0, 0, 0, 0.25);
+}
+
+.hero {
+  border-radius: 1.25rem;
+  padding: 1.75rem 1.5rem;
+  background: linear-gradient(135deg, #111827, #020617);
+  color: #f9fafb;
+}
+
+.hero-title {
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+}
+
+.hero-subtitle {
+  color: #e5e7eb;
+}
+
+.hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  font-size: 0.8rem;
+}
+
+.hero-search {
+  border-radius: 999px;
+  box-shadow: 0 0.75rem 1.8rem rgba(15, 23, 42, 0.5);
+}
+
+.card-hover {
+  border-radius: 1rem;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  border-color: rgba(15, 23, 42, 0.04);
+  background-color: var(--ch-surface);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.75rem 1.6rem rgba(15, 23, 42, 0.18);
+  border-color: rgba(0, 179, 179, 0.55);
+}
+
+.badge-tag {
+  background: var(--ch-accent-soft);
+  color: #055;
+  border: 1px solid rgba(0, 179, 179, 0.35);
+}
+
+.pill-filter {
+  border-radius: 999px;
+  padding-inline: 0.9rem;
+}
+
+.pill-filter-active {
+  background-color: #0f172a;
+  color: #e5e7eb;
+}
+
+.stat-card {
+  border-radius: 0.9rem;
+  background: rgba(15, 23, 42, 0.92);
+  color: #e5e7eb;
+}
+
+.stat-card-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+}
+
+.stat-card-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.queue-chip {
+  border-radius: 999px;
+}
+
+.site-footer {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+@media (max-width: 576px) {
+  .hero {
+    padding: 1.25rem 1rem;
+  }
+}
+
+/* Visible focus (keyboard navigation) */
+:focus-visible {
+  outline: 3px solid rgba(0, 179, 179, 0.85);
+  outline-offset: 2px;
+}
+

@@ -1,0 +1,18 @@
+# Python 编译缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 数据库文件 (开发环境)
+db.sqlite3
+
+# 环境变量/机密文件
+.env
+
+# 静态文件收集目录 (可选)
+staticfiles/

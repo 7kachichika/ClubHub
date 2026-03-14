@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Organizer Dashboard · ClubHub{% endblock %}
+
+{% block content %}
+  <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-3">
+    <div>
+      <h1 class="h3 mb-1">Organizer Dashboard</h1>
+      <p class="text-muted mb-0">Create events and monitor attendance, waitlists, and check-ins.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-primary" href="{% url 'create_event' %}">Create event</a>
+      <a class="btn btn-outline-secondary" href="{% url 'organizer_checkin' %}">Check-in</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-4">
+      <div class="stat-card px-3 py-2 h-100 d-flex flex-column justify-content-center">
+        <div class="stat-card-label">Events</div>
+        <div class="stat-card-value">{{ events|length }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card px-3 py-2 h-100 d-flex flex-column justify-content-center">
+        <div class="stat-card-label">Confirmed seats (per event)</div>
+        <div class="stat-card-value small">See per-row badges below</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card px-3 py-2 h-100 d-flex flex-column justify-content-center">
+        <div class="stat-card-label">Waitlist depth</div>
+        <div class="stat-card-value small">Manage expectations with capacity + waitlist</div>
+      </div>
+    </div>
+  </div>
+
+  {% if events %}
+    <div class="list-group shadow-sm">
+      {% for e in events %}
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div>
+              <div class="fw-semibold">
+                <a href="{% url 'event_detail' e.id %}">{{ e.title }}</a>
+              </div>
+              <div class="text-muted small">
+                <i class="bi bi-calendar-event" aria-hidden="true"></i>
+                {{ e.start_at|date:"Y-m-d H:i" }}
+                {% if e.start_at < now %}
+                  · <span class="badge rounded-pill text-bg-light text-muted">Past</span>
+                {% else %}
+                  · <span class="badge rounded-pill text-bg-success">Upcoming</span>
+                {% endif %}
+              </div>
+              <div class="mt-2 d-flex gap-2 flex-wrap">
+                <span class="badge text-bg-secondary">Confirmed: {{ e.confirmed_count }}</span>
+                <span class="badge text-bg-warning">Waitlist: {{ e.waitlist_count }}</span>
+                <span class="badge text-bg-dark">Capacity: {{ e.capacity }}</span>
+              </div>
+            </div>
+            <div class="text-end">
+              <a class="btn btn-outline-secondary btn-sm" href="{% url 'export_attendees_csv' e.id %}" aria-label="Export attendees CSV">Export CSV</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info" role="alert">
+      No events yet. Create your first event to get started.
+    </div>
+  {% endif %}
+{% endblock %}
+

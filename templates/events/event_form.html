@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Create Event · ClubHub{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-3">
+        <div>
+          <h1 class="h3 mb-1">Create Event</h1>
+          <p class="text-muted mb-0">Publish event details for students to discover and book.</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="{% url 'organizer_dashboard' %}">Back</a>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger" role="alert">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="{{ form.title.id_for_label }}">Title</label>
+                <input class="form-control" id="{{ form.title.id_for_label }}" name="{{ form.title.name }}" value="{{ form.title.value|default:'' }}" required>
+                {% if form.title.errors %}<div class="text-danger small mt-1">{{ form.title.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+                <textarea class="form-control" rows="4" id="{{ form.description.id_for_label }}" name="{{ form.description.name }}">{{ form.description.value|default:'' }}</textarea>
+                {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="{{ form.start_at.id_for_label }}">Start (local time)</label>
+                <input class="form-control" type="datetime-local" id="{{ form.start_at.id_for_label }}" name="{{ form.start_at.name }}" value="{{ form.start_at.value|default:'' }}" required>
+                {% if form.start_at.errors %}<div class="text-danger small mt-1">{{ form.start_at.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="{{ form.capacity.id_for_label }}">Capacity</label>
+                <input class="form-control" type="number" min="1" id="{{ form.capacity.id_for_label }}" name="{{ form.capacity.name }}" value="{{ form.capacity.value|default:'' }}" required>
+                {% if form.capacity.errors %}<div class="text-danger small mt-1">{{ form.capacity.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="{{ form.tags_text.id_for_label }}">Tags</label>
+                <input class="form-control" id="{{ form.tags_text.id_for_label }}" name="{{ form.tags_text.name }}" value="{{ form.tags_text.value|default:'' }}" placeholder="Comma-separated, e.g. Sports, Tech">
+                <div class="form-text">{{ form.tags_text.help_text }}</div>
+                {% if form.tags_text.errors %}<div class="text-danger small mt-1">{{ form.tags_text.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="{{ form.location_name.id_for_label }}">Location name</label>
+                <input class="form-control" id="{{ form.location_name.id_for_label }}" name="{{ form.location_name.name }}" value="{{ form.location_name.value|default:'' }}">
+                {% if form.location_name.errors %}<div class="text-danger small mt-1">{{ form.location_name.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="{{ form.latitude.id_for_label }}">Latitude</label>
+                <input class="form-control" id="{{ form.latitude.id_for_label }}" name="{{ form.latitude.name }}" value="{{ form.latitude.value|default:'' }}" placeholder="55.8721">
+                {% if form.latitude.errors %}<div class="text-danger small mt-1">{{ form.latitude.errors }}</div>{% endif %}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="{{ form.longitude.id_for_label }}">Longitude</label>
+                <input class="form-control" id="{{ form.longitude.id_for_label }}" name="{{ form.longitude.name }}" value="{{ form.longitude.value|default:'' }}" placeholder="-4.2890">
+                {% if form.longitude.errors %}<div class="text-danger small mt-1">{{ form.longitude.errors }}</div>{% endif %}
+              </div>
+            </div>
+
+            <button class="btn btn-primary mt-4" type="submit">Create</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

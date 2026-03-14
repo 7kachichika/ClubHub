@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load roles %}
+{% block title %}{{ event.title }} · ClubHub{% endblock %}
+
+{% block head %}
+  {% if MAPBOX_TOKEN and event.latitude and event.longitude %}
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+    <div>
+      <p class="small text-uppercase text-muted mb-1">
+        <i class="bi bi-activity" aria-hidden="true"></i>
+        Event detail
+      </p>
+      <h1 class="h3 mb-1">{{ event.title }}</h1>
+      <div class="text-muted">
+        <i class="bi bi-calendar-event" aria-hidden="true"></i>
+        {{ event.start_at|date:"Y-m-d H:i" }}
+        {% if event.location_name %} · <i class="bi bi-geo-alt" aria-hidden="true"></i> {{ event.location_name }}{% endif %}
+      </div>
+      <div class="mt-2 d-flex flex-wrap gap-2">
+        {% for t in event.tags.all %}
+          <span class="badge badge-tag">{{ t.name }}</span>
+        {% empty %}
+          <span class="badge text-bg-light text-muted">No tags</span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="text-end">
+      <div class="stat-card px-3 py-2">
+        <div class="stat-card-label">Capacity</div>
+        <div class="stat-card-value">{{ confirmed_count }}/{{ event.capacity }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-7">
+      <div class="card shadow-sm card-hover">
+        <div class="card-body">
+          <h2 class="h5">About</h2>
+          <p class="mb-0">{{ event.description|default:"(No description)"|linebreaksbr }}</p>
+        </div>
+      </div>
+
+      <div class="card shadow-sm card-hover mt-3">
+        <div class="card-body">
+          <h2 class="h5 mb-2">Location</h2>
+
+          {% if MAPBOX_TOKEN and event.latitude and event.longitude %}
+            <div id="map" style="height: 320px;" class="rounded border" aria-label="Event location map"></div>
+          {% else %}
+            <p class="text-muted mb-0">Map unavailable. (Set <code>MAPBOX_TOKEN</code> and provide coordinates.)</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-5">
+      <div class="card shadow-sm card-hover">
+        <div class="card-body">
+          <h2 class="h5 mb-3">Your action</h2>
+
+          {% if not user.is_authenticated %}
+            <p class="text-muted">Please log in as a Student to book or join the waitlist.</p>
+            <a class="btn btn-primary" href="{% url 'login' %}">Login</a>
+          {% elif user|user_is_student %}
+            {% if student_ticket %}
+              <div class="alert alert-secondary mb-3" role="alert">
+                You already have a ticket: <strong>{{ student_ticket.get_status_display }}</strong>
+              </div>
+            {% else %}
+              <form method="post" action="{% url 'book_event' event.id %}">
+                {% csrf_token %}
+                {% if capacity_available %}
+                  <button class="btn btn-primary w-100" type="submit">
+                    <i class="bi bi-ticket-perforated" aria-hidden="true"></i>
+                    <span class="ms-1">Book seat</span>
+                  </button>
+                {% else %}
+                  <button class="btn btn-warning w-100" type="submit">
+                    <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                    <span class="ms-1">Join waitlist</span>
+                  </button>
+                {% endif %}
+              </form>
+            {% endif %}
+
+            <hr class="my-3">
+
+            <form method="post" action="{% url 'toggle_favorite' event.id %}" id="favoriteForm">
+              {% csrf_token %}
+              <button class="btn btn-outline-secondary w-100" type="submit" id="favoriteBtn" aria-label="Toggle favorite">
+                {% if is_favorited %}
+                  <i class="bi bi-star-fill" aria-hidden="true"></i>
+                  <span class="ms-1">Unfavorite</span>
+                {% else %}
+                  <i class="bi bi-star" aria-hidden="true"></i>
+                  <span class="ms-1">Favorite</span>
+                {% endif %}
+              </button>
+            </form>
+          {% else %}
+            <p class="text-muted mb-0">Students can book or favorite events. Switch role on the login page.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {% if MAPBOX_TOKEN and event.latitude and event.longitude %}
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script>
+      mapboxgl.accessToken = "{{ MAPBOX_TOKEN|escapejs }}";
+      const map = new mapboxgl.Map({
+        container: "map",
+        style: "mapbox://styles/mapbox/streets-v12",
+        center: [Number("{{ event.longitude }}"), Number("{{ event.latitude }}")],
+        zoom: 14
+      });
+      new mapboxgl.Marker()
+        .setLngLat([Number("{{ event.longitude }}"), Number("{{ event.latitude }}")])
+        .addTo(map);
+    </script>
+  {% endif %}
+
+  {% if user.is_authenticated and user|user_is_student %}
+    <script>
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+      }
+
+      const favoriteForm = document.getElementById("favoriteForm");
+      const favoriteBtn = document.getElementById("favoriteBtn");
+      if (favoriteForm && favoriteBtn) {
+        favoriteForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const resp = await fetch(favoriteForm.action, {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": getCookie("csrftoken"),
+              "Accept": "application/json"
+            }
+          });
+          if (!resp.ok) return;
+          const data = await resp.json();
+          favoriteBtn.textContent = data.favorited ? "Unfavorite" : "Favorite";
+        });
+      }
+    </script>
+  {% endif %}
+{% endblock %}
+
