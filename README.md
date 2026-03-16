@@ -1,97 +1,243 @@
-# UofG ClubHub (Group AE) — Django Implementation
+# Club Hub
 
-This project implements the **UofG ClubHub** design spec: a centralized campus event platform with **Student / Organizer RBAC**, **dynamic capacity + FIFO waitlist auto-promotion**, **QR ticketing**, **email notifications**, **search & filter**, **favorites**, **Mapbox map**, and **CSV export**.
+Club Hub is a university event management platform that allows students to discover and book campus events while enabling organisers to manage attendance and event logistics.
 
-## Features (mapped to the spec)
+The system supports event booking, waitlist management, favourite events, QR-code check-in, and organiser dashboards.
 
-- **(M1) Authentication (RBAC)**: login as **Student** or **Organizer** (Django Groups).
-- **(M2) Create Event**: organizers publish events (ModelForm).
-- **(M3) Booking System**: students book if capacity allows, otherwise join a waitlist (atomic transaction).
-- **(M4) Cancellation**: students cancel from dashboard.
-- **(S1) Auto-Promotion**: cancelling a confirmed ticket promotes the first waitlisted ticket (FIFO).
-- **(S2) Personal Dashboard**: confirmed vs waitlisted tickets + waitlist position.
-- **(S3) Search & Filter**: keyword + tag + date range filtering on the homepage.
-- **(S4) Email Notifications**: email on confirmed booking or waitlist promotion (Django signals).
-- **(C1) Favorites**: toggle favorites on event detail (AJAX).
-- **(C2) Map**: Mapbox map on event detail when token + coordinates exist.
-- **(C3) Analytics**: export confirmed attendee list to CSV (organizer).
+Live site:  
+https://clubhub.pythonanywhere.com
 
-## Quick start
+GitHub repository:  
+https://github.com/7kachichika/ClubHub
 
-### 1) Create venv + install dependencies
+---
+
+# Features
+
+## Student Features
+
+- Browse available campus events
+- Search events by keyword
+- Book events with limited capacity
+- Join waitlists when events are full
+- Cancel bookings
+- Save favourite events
+- View bookings in a personal dashboard
+- Receive QR code tickets for event check-in
+
+## Organiser Features
+
+- Create and manage events
+- View confirmed bookings and waitlists
+- Manage event attendance
+- Organiser dashboard for event management
+
+---
+
+# Current Feature Status
+
+| Feature                       | Status      |
+| ----------------------------- | ----------- |
+| Event search                  | Implemented |
+| Event booking                 | Implemented |
+| Waitlist system               | Implemented |
+| Favourite events              | Implemented |
+| QR ticket generation          | Implemented |
+| Map integration (Google Maps) | In progress |
+| Email notifications           | Planned     |
+| CSV attendee export           | Planned     |
+
+---
+
+# Tech Stack
+
+Backend  
+- Django
+
+Frontend  
+- Django Templates  
+- Bootstrap  
+- JavaScript
+
+Database  
+- SQLite (development)
+
+External Services  
+- Google Maps API (planned integration)
+
+---
+
+# Installation
+
+Clone the repository:
 
 ```bash
-python3 -m venv .venv
-. .venv/bin/activate
+git clone https://github.com/7kachichika/ClubHub.git
+cd ClubHub
+```
+
+Create a virtual environment:
+
+```
+python -m venv venv
+```
+
+Activate the environment
+
+Mac/Linux
+
+```
+source venv/bin/activate
+```
+
+Windows
+
+```
+venv\Scripts\activate
+```
+
+Install dependencies
+
+```
 pip install -r requirements.txt
 ```
 
-### 2) Migrate database
+Run migrations
 
-```bash
-. .venv/bin/activate
+```
 python manage.py migrate
 ```
 
-### 3) Seed demo data (recommended)
+Create a superuser (optional)
 
-```bash
-. .venv/bin/activate
-python manage.py seed_demo
 ```
-
-Demo accounts:
-- **Organizer**: `organizer1` / `password1234`
-- **Student**: `student1` / `password1234`
-
-### 4) Run server
-
-```bash
-. .venv/bin/activate
-python manage.py runserver
-```
-
-Then open the site:
-- Home: `http://127.0.0.1:8000/`
-- Login: `http://127.0.0.1:8000/login/`
-
-## Admin (optional)
-
-Create a superuser:
-
-```bash
-. .venv/bin/activate
 python manage.py createsuperuser
 ```
 
-Admin: `http://127.0.0.1:8000/admin/`
+------
 
-RBAC uses Django Groups:
-- `Students`
-- `Organizers`
+# Running the Project
 
-Assign a user to one of these groups to control access.
+Start the development server:
 
-## Mapbox setup (optional)
-
-To enable the interactive map on event detail pages:
-
-```bash
-export MAPBOX_TOKEN="your_mapbox_public_token"
+```
+python manage.py runserver
 ```
 
-If `MAPBOX_TOKEN` is empty (default) or an event has no coordinates, the UI shows a friendly fallback message.
+Open:
 
-## Email setup
-
-Default: emails are printed to the console via Django **console email backend**.
-
-You can override the backend with:
-
-```bash
-export DJANGO_EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"
-export DEFAULT_FROM_EMAIL="clubhub@example.com"
+```
+http://127.0.0.1:8000
 ```
 
-Then set standard Django SMTP settings (e.g. `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`).
+------
 
+# Demo Accounts
+
+Student account
+
+```
+username: 7ka
+password: B}x?7kTTTW.8sq%
+```
+
+Organiser account
+
+```
+username: 8ka
+password: 62iWHL$p=AM'tFk
+```
+
+------
+
+# Project Structure
+
+```
+accounts/      user authentication and role management
+events/        event booking and waitlist logic
+templates/     HTML templates
+static/        CSS and JavaScript assets
+clubhub/       project configuration
+```
+
+Key design components
+
+- `services.py` used for business logic separation
+- `signals.py` used for automated workflow triggers
+- reusable templates and static assets
+
+------
+
+# Accessibility
+
+Accessibility improvements were implemented on key pages to improve usability and inclusivity.
+
+Implemented improvements include:
+
+- semantic HTML and proper form labels
+- improved keyboard focus visibility
+- clear form validation feedback
+- accessible interactive controls
+
+These changes improve compatibility with assistive technologies.
+
+------
+
+# Sustainability and Performance
+
+Performance optimisation was considered during development.
+
+Key strategies include:
+
+- reducing unnecessary frontend assets
+- efficient template rendering
+- minimising page reloads through client-side interactions
+- planning lazy loading for heavy components such as maps
+
+These improvements help reduce page load time and resource consumption.
+
+------
+
+# Development Timeline
+
+Phase 1 – Planning and Design
+
+- Reviewed coursework requirements
+- Designed system architecture and database schema
+- Adapted Figma template to create the user interface
+
+Phase 2 – Core System Implementation
+
+- Implemented authentication and role-based access
+- Built event creation and booking system
+- Implemented waitlist logic
+- Developed dashboards for students and organisers
+
+Phase 3 – Feature Completion
+
+- Added favourite events system
+- Implemented QR code tickets for check-in
+- Implemented event search functionality
+
+Phase 4 – Quality Improvements
+
+- Improved responsive UI
+- Implemented accessibility improvements
+- Ongoing work on map integration
+- Planned testing and sustainability optimisation
+
+------
+
+# Deployment
+
+The project is deployed using PythonAnywhere.
+
+Live application:
+
+https://clubhub.pythonanywhere.com
+
+Deployment considerations include
+
+- disabling debug mode
+- configuring allowed hosts
+- serving static files correctly
