@@ -26,6 +26,19 @@ from .models import Event, Tag, Ticket
 from .services import book_event_for_student, cancel_ticket_and_promote, check_in_ticket
 
 
+def parse_filter_datetime(value):
+    # Small helper for datetime-local inputs from the filter form
+    if not value:
+        return None
+    try:
+        dt = timezone.datetime.fromisoformat(value)
+        if timezone.is_naive(dt):
+            dt = timezone.make_aware(dt)
+        return dt
+    except ValueError:
+        return None
+
+
 def event_list(request):
     qs = (
         Event.objects.all()
@@ -45,24 +58,22 @@ def event_list(request):
 
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+
     if tag:
         qs = qs.filter(tags__name__iexact=tag)
-    if start:
-        try:
-            start_dt = timezone.datetime.fromisoformat(start)
-            if timezone.is_naive(start_dt):
-                start_dt = timezone.make_aware(start_dt)
-            qs = qs.filter(start_at__gte=start_dt)
-        except ValueError:
-            pass
-    if end:
-        try:
-            end_dt = timezone.datetime.fromisoformat(end)
-            if timezone.is_naive(end_dt):
-                end_dt = timezone.make_aware(end_dt)
-            qs = qs.filter(start_at__lte=end_dt)
-        except ValueError:
-            pass
+
+    start_dt = parse_filter_datetime(start)
+    end_dt = parse_filter_datetime(end)
+
+    # Handle reversed date inputs without breaking the page
+    if start_dt and end_dt and start_dt > end_dt:
+        start_dt, end_dt = end_dt, start_dt
+
+    if start_dt:
+        qs = qs.filter(start_at__gte=start_dt)
+
+    if end_dt:
+        qs = qs.filter(start_at__lte=end_dt)
 
     tags = Tag.objects.order_by("name")
     return render(
@@ -187,7 +198,9 @@ def export_attendees_csv(request, event_id: int):
     response["Content-Disposition"] = f'attachment; filename="event_{event_id}_attendees.csv"'
 
     writer = csv.writer(response)
-    writer.writerow(["event_id", "event_title", "student_username", "student_email", "status", "checked_in"])
+    writer.writerow(
+        ["event_id", "event_title", "student_username", "student_email", "status", "checked_in"]
+    )
     for t in (
         Ticket.objects.filter(event=event, status=Ticket.Status.CONFIRMED)
         .select_related("student__user")

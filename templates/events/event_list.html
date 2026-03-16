@@ -80,9 +80,24 @@
   </form>
 
   {% if events %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="h5 mb-0">Available events</h2>
+      <span class="text-muted small">Use the filters above to refine results instantly.</span>
+    </div>
+    <div id="client-filter-empty" class="alert alert-info d-none mb-3" role="alert">
+      No matching events found. Try a broader search or clear the filters.
+    </div>
+
     <div class="row g-3">
       {% for e in events %}
-        <div class="col-12 col-md-6 col-lg-4">
+        <div
+          class="col-12 col-md-6 col-lg-4 event-card"
+          data-title="{{ e.title|lower }}"
+          data-description="{{ e.description|default:''|lower }}"
+          data-location="{% if e.location_name %}{{ e.location_name|lower }}{% endif %}"
+          data-tags="{% for t in e.tags.all %}{{ t.name|lower }} {% endfor %}"
+          data-start="{{ e.start_at|date:'c' }}"
+        >
           <a class="text-decoration-none" href="{% url 'event_detail' e.id %}">
             <div class="card card-hover shadow-sm h-100">
               <div class="card-body">
@@ -133,6 +148,7 @@
         </div>
       {% endfor %}
     </div>
+
     <section class="mt-4">
       <div class="row g-3">
         <div class="col-12 col-md-4">
@@ -187,6 +203,76 @@
       </div>
     </div>
   {% endif %}
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const qInput = document.getElementById("q");
+      const tagInput = document.getElementById("tag");
+      const startInput = document.getElementById("start");
+      const endInput = document.getElementById("end");
+      const cards = document.querySelectorAll(".event-card");
+      const emptyState = document.getElementById("client-filter-empty");
+
+      if (!cards.length) {
+        return;
+      }
+
+      function normalise(value) {
+        return (value || "").toString().trim().toLowerCase();
+      }
+
+      function filterCards() {
+        const searchText = normalise(qInput ? qInput.value : "");
+        const selectedTag = normalise(tagInput ? tagInput.value : "");
+        let startDate = startInput && startInput.value ? new Date(startInput.value) : null;
+        let endDate = endInput && endInput.value ? new Date(endInput.value) : null;
+
+        if (startDate && endDate && startDate > endDate) {
+          const temp = startDate;
+          startDate = endDate;
+          endDate = temp;
+        }
+
+        let visibleCount = 0;
+
+        cards.forEach(function (card) {
+          const title = normalise(card.dataset.title);
+          const description = normalise(card.dataset.description);
+          const location = normalise(card.dataset.location);
+          const tags = normalise(card.dataset.tags);
+          const eventDate = card.dataset.start ? new Date(card.dataset.start) : null;
+
+          const matchesText =
+            !searchText ||
+            title.includes(searchText) ||
+            description.includes(searchText) ||
+            location.includes(searchText) ||
+            tags.includes(searchText);
+
+          const matchesTag = !selectedTag || tags.includes(selectedTag);
+          const matchesStart = !startDate || (eventDate && eventDate >= startDate);
+          const matchesEnd = !endDate || (eventDate && eventDate <= endDate);
+
+          const shouldShow = matchesText && matchesTag && matchesStart && matchesEnd;
+          card.classList.toggle("d-none", !shouldShow);
+
+          if (shouldShow) {
+            visibleCount += 1;
+          }
+        });
+
+        if (emptyState) {
+          emptyState.classList.toggle("d-none", visibleCount !== 0);
+        }
+      }
+
+      // Instant filtering, while keeping normal form submit as fallback
+      qInput && qInput.addEventListener("input", filterCards);
+      tagInput && tagInput.addEventListener("change", filterCards);
+      startInput && startInput.addEventListener("change", filterCards);
+      endInput && endInput.addEventListener("change", filterCards);
+
+      filterCards();
+    });
+  </script>
 {% endblock %}
-
-
