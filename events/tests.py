@@ -305,3 +305,226 @@ class EventServicesTests(TestCase):
         self.assertEqual(prefs["Tech"], 5.0)    # 订票 +2，已签到 +3
         self.assertNotIn("OldTag", prefs)
         self.assertEqual(self.student_1.preferences, prefs)
+
+from django.urls import reverse
+from django.contrib.auth.models import Group
+from django.test import Client
+
+
+class EventViewsTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        # Groups（确保 student_required / organizer_required 正常工作）
+        self.student_group, _ = Group.objects.get_or_create(name="Students")
+        self.organizer_group, _ = Group.objects.get_or_create(name="Organizers")
+
+        # Users
+        self.organizer_user = User.objects.create_user(
+            username="organizer_view",
+            password="testpass123",
+        )
+        self.organizer_user.groups.add(self.organizer_group)
+        self.organizer = OrganizerProfile.objects.create(user=self.organizer_user)
+
+        self.student_user = User.objects.create_user(
+            username="student_view",
+            password="testpass123",
+        )
+        self.student_user.groups.add(self.student_group)
+        self.student = StudentProfile.objects.create(user=self.student_user)
+
+        self.other_student_user = User.objects.create_user(
+            username="other_student",
+            password="testpass123",
+        )
+        self.other_student_user.groups.add(self.student_group)
+        self.other_student = StudentProfile.objects.create(user=self.other_student_user)
+
+        # Tag
+        self.tag = Tag.objects.create(name="Music")
+
+        # Event
+        self.event = Event.objects.create(
+            organizer=self.organizer,
+            title="View Test Event",
+            description="Test",
+            start_at=timezone.now() + timedelta(days=2),
+            capacity=1,
+        )
+        self.event.tags.add(self.tag)
+
+    # ---------- book_event ----------
+
+    def test_book_event_creates_ticket_for_student(self):
+        self.client.login(username="student_view", password="testpass123")
+
+        response = self.client.post(
+            reverse("book_event", args=[self.event.id])
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            Ticket.objects.filter(
+                event=self.event,
+                student=self.student,
+            ).count(),
+            1,
+        )
+
+    def test_book_event_prevents_duplicate_booking(self):
+        Ticket.objects.create(
+            event=self.event,
+            student=self.student,
+            status=Ticket.Status.CONFIRMED,
+        )
+
+        self.client.login(username="student_view", password="testpass123")
+
+        self.client.post(reverse("book_event", args=[self.event.id]))
+
+        self.assertEqual(
+            Ticket.objects.filter(event=self.event, student=self.student).count(),
+            1,
+        )
+
+    # ---------- cancel_ticket ----------
+
+    def test_cancel_ticket_changes_status_and_promotes_waitlist(self):
+        self.event.capacity = 1
+        self.event.save()
+
+        confirmed = Ticket.objects.create(
+            event=self.event,
+            student=self.student,
+            status=Ticket.Status.CONFIRMED,
+        )
+        waitlisted = Ticket.objects.create(
+            event=self.event,
+            student=self.other_student,
+            status=Ticket.Status.WAITLISTED,
+        )
+
+        self.client.login(username="student_view", password="testpass123")
+
+        response = self.client.post(
+            reverse("cancel_ticket", args=[confirmed.id])
+        )
+
+        confirmed.refresh_from_db()
+        waitlisted.refresh_from_db()
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(confirmed.status, Ticket.Status.CANCELLED)
+        self.assertEqual(waitlisted.status, Ticket.Status.CONFIRMED)
+
+    def test_cancel_ticket_only_allows_owner(self):
+        ticket = Ticket.objects.create(
+            event=self.event,
+            student=self.other_student,
+            status=Ticket.Status.CONFIRMED,
+        )
+
+        self.client.login(username="student_view", password="testpass123")
+
+        response = self.client.post(
+            reverse("cancel_ticket", args=[ticket.id])
+        )
+
+        # 应该被拒绝（通常是 404）
+        self.assertNotEqual(response.status_code, 200)
+
+    # ---------- toggle_favorite ----------
+
+    def test_toggle_favorite_adds_and_removes(self):
+        self.client.login(username="student_view", password="testpass123")
+
+        # add
+        self.client.post(reverse("toggle_favorite", args=[self.event.id]))
+        self.assertTrue(
+            self.student.favorite_events.filter(pk=self.event.pk).exists()
+        )
+
+        # remove
+        self.client.post(reverse("toggle_favorite", args=[self.event.id]))
+        self.assertFalse(
+            self.student.favorite_events.filter(pk=self.event.pk).exists()
+        )
+
+    def test_toggle_favorite_returns_json_when_requested(self):
+        self.client.login(username="student_view", password="testpass123")
+
+        response = self.client.post(
+            reverse("toggle_favorite", args=[self.event.id]),
+            HTTP_ACCEPT="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("favorited", response.json())
+
+    # ---------- create_event ----------
+
+    def test_create_event_by_organizer(self):
+        self.client.login(username="organizer_view", password="testpass123")
+
+        response = self.client.post(
+            reverse("create_event"),
+            {
+                "title": "New Event",
+                "description": "Test",
+                "start_at": (timezone.now() + timedelta(days=3)).isoformat(),
+                "capacity": 10,
+                "tags_text": "Music, Tech",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Event.objects.filter(title="New Event").exists())
+
+    def test_create_event_forbidden_for_student(self):
+        self.client.login(username="student_view", password="testpass123")
+
+        response = self.client.get(reverse("create_event"))
+
+        self.assertNotEqual(response.status_code, 200)
+
+    # ---------- export_attendees_csv ----------
+
+    def test_export_attendees_csv_returns_csv(self):
+        Ticket.objects.create(
+            event=self.event,
+            student=self.student,
+            status=Ticket.Status.CONFIRMED,
+        )
+
+        self.client.login(username="organizer_view", password="testpass123")
+
+        response = self.client.get(
+            reverse("export_attendees_csv", args=[self.event.id])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+
+    # ---------- ticket_qr_png ----------
+
+    def test_ticket_qr_png_access_control(self):
+        ticket = Ticket.objects.create(
+            event=self.event,
+            student=self.student,
+            status=Ticket.Status.CONFIRMED,
+        )
+
+        # owner can access
+        self.client.login(username="student_view", password="testpass123")
+        response = self.client.get(
+            reverse("ticket_qr_png", args=[ticket.code])
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # unrelated user cannot
+        self.client.login(username="other_student", password="testpass123")
+        response = self.client.get(
+            reverse("ticket_qr_png", args=[ticket.code])
+        )
+        self.assertNotEqual(response.status_code, 200)
