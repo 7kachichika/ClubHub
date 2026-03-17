@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
+from django.db import IntegrityError, transaction
 
 from accounts.models import OrganizerProfile, StudentProfile
 from events.models import Event, Tag, Ticket
@@ -625,3 +626,214 @@ class EventFormsTests(TestCase):
         )
 
         self.assertFalse(form.is_valid())
+
+# =========================
+# Models Tests
+# =========================
+
+class EventModelsTests(TestCase):
+    def setUp(self):
+        self.organizer_user = User.objects.create_user(
+            username="org_model",
+            password="testpass123",
+        )
+        self.organizer = OrganizerProfile.objects.create(user=self.organizer_user)
+
+        self.student_user = User.objects.create_user(
+            username="student_model",
+            password="testpass123",
+        )
+        self.student = StudentProfile.objects.create(user=self.student_user)
+
+        self.event = Event.objects.create(
+            organizer=self.organizer,
+            title="Model Event",
+            description="Model test",
+            start_at=timezone.now() + timedelta(days=2),
+            capacity=10,
+        )
+
+    def test_ticket_unique_active_constraint_blocks_second_active_ticket(self):
+        Ticket.objects.create(
+            event=self.event,
+            student=self.student,
+            status=Ticket.Status.CONFIRMED,
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Ticket.objects.create(
+                    event=self.event,
+                    student=self.student,
+                    status=Ticket.Status.WAITLISTED,
+                )
+
+    def test_ticket_allows_new_active_ticket_after_cancelled_ticket(self):
+        Ticket.objects.create(
+            event=self.event,
+            student=self.student,
+            status=Ticket.Status.CANCELLED,
+        )
+
+        new_ticket = Ticket.objects.create(
+            event=self.event,
+            student=self.student,
+            status=Ticket.Status.CONFIRMED,
+        )
+
+        self.assertEqual(new_ticket.status, Ticket.Status.CONFIRMED)
+        self.assertEqual(
+            Ticket.objects.filter(event=self.event, student=self.student).count(),
+            2,
+        )
+
+    def test_model_string_methods(self):
+        tag = Tag.objects.create(name="Music")
+        ticket = Ticket.objects.create(
+            event=self.event,
+            student=self.student,
+            status=Ticket.Status.CONFIRMED,
+        )
+
+        self.assertEqual(str(tag), "Music")
+        self.assertEqual(str(self.event), "Model Event")
+        self.assertIn("Ticket(", str(ticket))
+
+# =========================
+# Recommendation Tests
+# =========================
+
+class RecommendationLogicTests(TestCase):
+    def setUp(self):
+        self.organizer_user = User.objects.create_user(
+            username="org_reco",
+            password="testpass123",
+        )
+        self.organizer = OrganizerProfile.objects.create(user=self.organizer_user)
+
+        self.student_user = User.objects.create_user(
+            username="student_reco",
+            password="testpass123",
+        )
+        self.student = StudentProfile.objects.create(user=self.student_user)
+
+        self.music_tag = Tag.objects.create(name="Music")
+        self.tech_tag = Tag.objects.create(name="Tech")
+        self.sports_tag = Tag.objects.create(name="Sports")
+
+    def test_build_student_preferences_counts_favorites_and_tickets(self):
+        from events.views import _build_student_preferences
+
+        favorite_event = Event.objects.create(
+            organizer=self.organizer,
+            title="Favorite Event",
+            description="Favorite",
+            start_at=timezone.now() + timedelta(days=3),
+            capacity=10,
+        )
+        favorite_event.tags.add(self.music_tag)
+
+        booked_event = Event.objects.create(
+            organizer=self.organizer,
+            title="Booked Event",
+            description="Booked",
+            start_at=timezone.now() + timedelta(days=4),
+            capacity=10,
+        )
+        booked_event.tags.add(self.music_tag, self.tech_tag)
+
+        self.student.favorite_events.add(favorite_event)
+        Ticket.objects.create(
+            event=booked_event,
+            student=self.student,
+            status=Ticket.Status.CONFIRMED,
+        )
+
+        prefs = _build_student_preferences(self.student)
+
+        self.assertEqual(prefs["Music"], 3.0)  # favorite +1, ticket +2
+        self.assertEqual(prefs["Tech"], 2.0)   # ticket +2
+
+    def test_get_student_preferences_prefers_saved_preferences(self):
+        from events.views import _get_student_preferences
+
+        self.student.preferences = {"Music": 99.0}
+        self.student.save(update_fields=["preferences", "preferences_updated_at"])
+
+        prefs = _get_student_preferences(self.student)
+
+        self.assertEqual(prefs, {"Music": 99.0})
+
+    def test_score_event_for_student_adds_preference_popularity_and_time_bonus(self):
+        from events.views import _score_event_for_student
+
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title="Scored Event",
+            description="Score",
+            start_at=timezone.now() + timedelta(hours=12),
+            capacity=10,
+        )
+        event.tags.add(self.music_tag)
+        event.confirmed_count = 4  # 热度分 = 4 * 0.5 = 2.0
+
+        score = _score_event_for_student(event, {"Music": 2.5})
+
+        # 偏好 2.5 + 热度 2.0 + 24h 内时间加分 2.0 = 6.5
+        self.assertAlmostEqual(score, 6.5)
+
+    def test_get_recommended_events_excludes_past_events_and_respects_limit_and_order(self):
+        from events.views import _get_recommended_events
+
+        self.student.preferences = {"Music": 3.0, "Tech": 1.0}
+        self.student.save(update_fields=["preferences", "preferences_updated_at"])
+
+        top_event = Event.objects.create(
+            organizer=self.organizer,
+            title="Top Event",
+            description="Top",
+            start_at=timezone.now() + timedelta(hours=10),
+            capacity=10,
+        )
+        top_event.tags.add(self.music_tag)
+        top_event.confirmed_count = 2  # 3 + 1 + 2 = 6
+
+        second_event = Event.objects.create(
+            organizer=self.organizer,
+            title="Second Event",
+            description="Second",
+            start_at=timezone.now() + timedelta(days=10),
+            capacity=10,
+        )
+        second_event.tags.add(self.tech_tag)
+        second_event.confirmed_count = 6  # 1 + 3 = 4
+
+        low_event = Event.objects.create(
+            organizer=self.organizer,
+            title="Low Event",
+            description="Low",
+            start_at=timezone.now() + timedelta(days=15),
+            capacity=10,
+        )
+        low_event.tags.add(self.sports_tag)
+        low_event.confirmed_count = 0  # 0
+
+        past_event = Event.objects.create(
+            organizer=self.organizer,
+            title="Past Event",
+            description="Past",
+            start_at=timezone.now() - timedelta(days=1),
+            capacity=10,
+        )
+        past_event.tags.add(self.music_tag)
+        past_event.confirmed_count = 100  # 即使很高，也不应被推荐
+
+        recommended = _get_recommended_events(
+            self.student,
+            [low_event, second_event, past_event, top_event],
+            limit=2,
+        )
+
+        self.assertEqual([event.id for event in recommended], [top_event.id, second_event.id])
+        self.assertNotIn(past_event.id, [event.id for event in recommended])
+        self.assertEqual(len(recommended), 2)
