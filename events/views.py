@@ -242,6 +242,7 @@ def cancel_ticket(request, ticket_id: int):
 def toggle_favorite(request, event_id: int):
     event = get_object_or_404(Event, pk=event_id)
     student = get_student_profile(request.user)
+
     if student.favorite_events.filter(pk=event.pk).exists():
         student.favorite_events.remove(event)
         favorited = False
@@ -249,13 +250,12 @@ def toggle_favorite(request, event_id: int):
         student.favorite_events.add(event)
         favorited = True
 
-        rebuild_and_save_student_preferences(student)
+    rebuild_and_save_student_preferences(student)
 
     wants_json = "application/json" in (request.headers.get("Accept") or "")
     if wants_json:
         return JsonResponse({"favorited": favorited})
     return redirect("event_detail", event_id=event_id)
-
 
 @organizer_required
 def create_event(request):
