@@ -112,112 +112,113 @@ body {
   outline-offset: 2px;
 }
 
-/* Search and filter polish */
-.hero-search {
-  border-radius: 1rem;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+#event-map {
+  min-height: 360px;
+  background: #f8f9fa;
 }
 
-.hero-search .form-control {
-  background: transparent;
-  box-shadow: none;
+#selected-coords {
+  min-height: 1.5rem;
 }
 
-.hero-search .form-control:focus {
-  box-shadow: none;
-}
-
-.card form .form-control,
-.card form .form-select,
-form.card .form-control,
-form.card .form-select {
-  border-radius: 0.75rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-}
-
-.card form .form-control:focus,
-.card form .form-select:focus,
-form.card .form-control:focus,
-form.card .form-select:focus {
-  border-color: rgba(13, 110, 253, 0.45);
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.12);
-  background-color: #fff;
-}
-
-/* Event cards */
-.event-card {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.card-hover {
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 1rem;
-}
-
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
-}
-
-.event-card .card-title,
-.event-card h2 {
-  transition: color 0.2s ease;
-}
-
-.event-card:hover h2 {
-  color: #0d6efd;
-}
-
-/* Tag badges */
-.badge-tag {
-  background-color: #eef4ff;
-  color: #244a86;
-  border: 1px solid #d7e5ff;
-  border-radius: 999px;
-  font-weight: 500;
-  padding: 0.4rem 0.7rem;
-}
-
-/* Empty state after client-side filtering */
-#client-filter-empty {
-  border: 1px dashed rgba(13, 110, 253, 0.25);
-  border-radius: 1rem;
-  background: linear-gradient(180deg, rgba(13, 110, 253, 0.04), rgba(13, 110, 253, 0.01));
-  padding: 1rem 1.25rem;
-}
-
-/* Progress bar polish */
-.progress {
-  height: 0.7rem;
-  border-radius: 999px;
-  background-color: #edf1f5;
-}
-
-.progress-bar {
-  border-radius: 999px;
-}
-
-/* Filter action buttons */
-form[aria-label="Filter events"] .btn {
-  border-radius: 0.75rem;
-}
-
-/* Better spacing on smaller screens */
 @media (max-width: 767.98px) {
-  .hero-title {
-    font-size: 2rem;
+  #event-map {
+    min-height: 300px;
   }
+}
 
-  .hero-search {
-    padding: 0.75rem !important;
-  }
+/* ===== 瀑布流布局 ===== */
+/* ===== Masonry / waterfall layout ===== */
+.masonry-grid {
+  column-count: 4;
+  column-gap: 1.25rem;
+}
 
-  form[aria-label="Filter events"] .d-flex.gap-2 {
-    flex-direction: column;
-  }
+.masonry-item {
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  margin-bottom: 1.25rem;
+  display: inline-block;
+  width: 100%;
+}
 
-  form[aria-label="Filter events"] .btn {
-    width: 100%;
+/* Large tablet / small laptop */
+@media (max-width: 1200px) {
+  .masonry-grid {
+    column-count: 3;
   }
+}
+
+/* Tablet */
+@media (max-width: 992px) {
+  .masonry-grid {
+    column-count: 2;
+  }
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+  .masonry-grid {
+    column-count: 1;
+  }
+}
+
+/* ===== 卡片优化 ===== */
+.card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* 封面图 */
+.event-cover {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* 没图占位 */
+.event-cover-placeholder {
+  height: 160px;
+  background: #f1f3f5;
+}
+
+/* 描述 */
+.event-desc {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* 标签区域 */
+.event-tags {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+.event-cover {
+  aspect-ratio: 16 / 9;
+}
+
+/* ===== 进度条优化 ===== */
+.event-progress {
+  height: 6px;
+  border-radius: 4px;
+  background-color: #e9ecef;
+}
+
+.event-progress .progress-bar {
+  background-color: #0d6efd;
+}
+
+/* 人数信息 */
+.card-body .small {
+  font-size: 0.8rem;
 }
