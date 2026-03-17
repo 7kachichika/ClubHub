@@ -295,3 +295,93 @@ class AccountsViewsTests(TestCase):
 
         response = self.client.get(reverse("student_dashboard"))
         self.assertNotEqual(response.status_code, 200)
+
+class AccountsFormsTests(TestCase):
+    def setUp(self):
+        self.student_group, _ = Group.objects.get_or_create(name=STUDENT_GROUP)
+        self.organizer_group, _ = Group.objects.get_or_create(name=ORGANIZER_GROUP)
+
+        self.user = User.objects.create_user(
+            username="existing_user",
+            password="testpass123",
+        )
+        self.user.groups.add(self.student_group)
+        StudentProfile.objects.create(user=self.user)
+
+    # ---------- RegistrationForm ----------
+
+    def test_registration_form_valid_student(self):
+        from accounts.forms import RegistrationForm
+
+        form = RegistrationForm(
+            data={
+                "username": "newuser",
+                "email": "new@example.com",
+                "role": "student",
+                "password1": "StrongPass123!",
+                "password2": "StrongPass123!",
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+
+    def test_registration_form_rejects_duplicate_username(self):
+        from accounts.forms import RegistrationForm
+
+        form = RegistrationForm(
+            data={
+                "username": "existing_user",
+                "email": "new@example.com",
+                "role": "student",
+                "password1": "StrongPass123!",
+                "password2": "StrongPass123!",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("username", form.errors)
+
+    def test_registration_form_rejects_password_mismatch(self):
+        from accounts.forms import RegistrationForm
+
+        form = RegistrationForm(
+            data={
+                "username": "user2",
+                "email": "user2@example.com",
+                "role": "student",
+                "password1": "StrongPass123!",
+                "password2": "DifferentPass123!",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("password2", form.errors)
+
+    # ---------- RoleLoginForm ----------
+
+    def test_role_login_form_accepts_correct_student_role(self):
+        from accounts.forms import RoleLoginForm
+
+        form = RoleLoginForm(
+            data={
+                "username": "existing_user",
+                "password": "testpass123",
+                "role": "student",
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+
+    def test_role_login_form_rejects_wrong_role(self):
+        from accounts.forms import RoleLoginForm
+
+        form = RoleLoginForm(
+            data={
+                "username": "existing_user",
+                "password": "testpass123",
+                "role": "organizer",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("role", form.errors)

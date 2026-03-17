@@ -528,3 +528,100 @@ class EventViewsTests(TestCase):
             reverse("ticket_qr_png", args=[ticket.code])
         )
         self.assertNotEqual(response.status_code, 200)
+
+class EventFormsTests(TestCase):
+    def setUp(self):
+        self.organizer_user = User.objects.create_user(
+            username="org_form",
+            password="testpass123",
+        )
+        self.organizer = OrganizerProfile.objects.create(user=self.organizer_user)
+
+    # ---------- EventForm ----------
+
+    def test_event_form_valid_and_tag_parsing(self):
+        from events.forms import EventForm
+
+        form = EventForm(
+            data={
+                "title": "Form Event",
+                "description": "Test",
+                "start_at": (timezone.now() + timedelta(days=2)).isoformat(),
+                "capacity": 10,
+                "tags_text": "Music, Tech, Music",
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+
+        event = form.save(commit=False)
+        event.organizer = self.organizer
+        event.save()
+
+        form.apply_tags(event)
+
+        tags = list(event.tags.values_list("name", flat=True))
+        self.assertEqual(sorted(tags), ["Music", "Tech"])
+
+    def test_event_form_empty_tags_clears_tags(self):
+        from events.forms import EventForm
+
+        form = EventForm(
+            data={
+                "title": "No Tag Event",
+                "description": "Test",
+                "start_at": (timezone.now() + timedelta(days=2)).isoformat(),
+                "capacity": 5,
+                "tags_text": "",
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+
+        event = form.save(commit=False)
+        event.organizer = self.organizer
+        event.save()
+
+        form.apply_tags(event)
+
+        self.assertEqual(event.tags.count(), 0)
+
+    def test_event_form_invalid_capacity(self):
+        from events.forms import EventForm
+
+        form = EventForm(
+            data={
+                "title": "Bad Event",
+                "description": "Test",
+                "start_at": (timezone.now() + timedelta(days=2)).isoformat(),
+                "capacity": -1,
+                "tags_text": "Music",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+
+    # ---------- CheckinForm ----------
+
+    def test_checkin_form_accepts_valid_uuid(self):
+        from events.forms import CheckinForm
+        import uuid
+
+        form = CheckinForm(
+            data={
+                "code": str(uuid.uuid4())
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+
+    def test_checkin_form_rejects_invalid_uuid(self):
+        from events.forms import CheckinForm
+
+        form = CheckinForm(
+            data={
+                "code": "not-a-uuid"
+            }
+        )
+
+        self.assertFalse(form.is_valid())
