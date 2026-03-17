@@ -17,44 +17,44 @@ from .auth import (
     organizer_required,
     student_required,
 )
-from .forms import RegistrationForm, RoleLoginForm
+from .forms import LoginForm, RegistrationForm
 
+def get_post_login_redirect(user):
+    if user.groups.filter(name=ORGANIZER_GROUP).exists():
+        get_organizer_profile(user)
+        return "organizer_dashboard"
+
+    if user.groups.filter(name=STUDENT_GROUP).exists():
+        get_student_profile(user)
+        return "student_dashboard"
+
+    return "event_list"
 
 def login_view(request):
     if request.user.is_authenticated:
-        # If already logged in, choose destination based on available profiles/groups.
-        if hasattr(request.user, "organizer_profile"):
-            return redirect("organizer_dashboard")
-        if hasattr(request.user, "student_profile"):
-            return redirect("student_dashboard")
-        return redirect("event_list")
+        return redirect(get_post_login_redirect(request.user))
 
     if request.method == "POST":
-        form = RoleLoginForm(request=request, data=request.POST)
+        form = LoginForm(request=request, data=request.POST)
         if form.is_valid():
-            login(request, form.get_user())
-            role = form.cleaned_data["role"]
+            user = form.get_user()
+            login(request, user)
             messages.success(request, "Logged in successfully.")
-            return redirect(RoleRedirect(role=role).dashboard_url_name)
+            return redirect(get_post_login_redirect(user))
     else:
-        form = RoleLoginForm(request=request)
+        form = LoginForm(request=request)
 
     return render(request, "accounts/login.html", {"form": form})
 
-
 def register(request):
     if request.user.is_authenticated:
-        if hasattr(request.user, "organizer_profile"):
-            return redirect("organizer_dashboard")
-        if hasattr(request.user, "student_profile"):
-            return redirect("student_dashboard")
-        return redirect("event_list")
+        return redirect(get_post_login_redirect(request.user))
 
     if request.method == "POST":
         form = RegistrationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            # Ensure email is saved even if User model doesn't require it.
+            user.username = form.cleaned_data["username"]
             user.email = form.cleaned_data.get("email", "")
             user.save()
 
@@ -70,12 +70,11 @@ def register(request):
 
             login(request, user)
             messages.success(request, "Account created and logged in.")
-            return redirect(RoleRedirect(role=role).dashboard_url_name)
+            return redirect(get_post_login_redirect(user))
     else:
         form = RegistrationForm()
 
     return render(request, "accounts/register.html", {"form": form})
-
 
 def logout_view(request):
     logout(request)
