@@ -10,6 +10,14 @@ class StudentProfile(models.Model):
         "events.Event", blank=True, related_name="favorited_by"
     )
 
+    preferences = models.JSONField(
+        default=dict,blank=True
+    )
+
+    preferences_updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
     def __str__(self) -> str:
         return f"StudentProfile(user={self.user_id})"
 
