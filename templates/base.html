@@ -55,8 +55,9 @@
       {% if messages %}
         <div class="mb-3">
           {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} mb-2" role="alert">
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-2" role="alert">
               {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
           {% endfor %}
         </div>
@@ -64,6 +65,7 @@
 
       {% block content %}{% endblock %}
     </main>
+
     <footer class="container pb-4">
       <p class="site-footer mb-0">
         UofG ClubHub · COMPSCI5012 Internet Technology — Dynamic capacity engine, waitlist automation, and QR-based check-in.
@@ -74,4 +76,3 @@
     {% block scripts %}{% endblock %}
   </body>
 </html>
-

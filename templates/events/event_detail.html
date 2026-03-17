@@ -2,12 +2,6 @@
 {% load roles %}
 {% block title %}{{ event.title }} · ClubHub{% endblock %}
 
-{% block head %}
-  {% if MAPBOX_TOKEN and event.latitude and event.longitude %}
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
-  {% endif %}
-{% endblock %}
-
 {% block content %}
   <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
     <div>
@@ -50,10 +44,45 @@
         <div class="card-body">
           <h2 class="h5 mb-2">Location</h2>
 
-          {% if MAPBOX_TOKEN and event.latitude and event.longitude %}
-            <div id="map" style="height: 320px;" class="rounded border" aria-label="Event location map"></div>
+          {% if event.location_name %}
+            <p class="text-muted mb-3">
+              <i class="bi bi-geo-alt" aria-hidden="true"></i>
+              {{ event.location_name }}
+            </p>
+          {% endif %}
+
+          {% if GOOGLE_MAPS_API_KEY and event.latitude and event.longitude %}
+            <div class="ratio ratio-16x9 rounded overflow-hidden border">
+              <iframe
+                title="Event location map"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                style="border:0;"
+                src="https://www.google.com/maps/embed/v1/place?key={{ GOOGLE_MAPS_API_KEY }}&q={{ event.latitude }},{{ event.longitude }}&zoom=15">
+              </iframe>
+            </div>
+
+            <div class="mt-3">
+              <a
+                class="btn btn-outline-secondary btn-sm"
+                href="https://www.google.com/maps?q={{ event.latitude }},{{ event.longitude }}"
+                target="_blank"
+                rel="noopener noreferrer">
+                Open in Google Maps
+              </a>
+            </div>
+          {% elif GOOGLE_MAPS_API_KEY and event.location_name %}
+            <div class="ratio ratio-16x9 rounded overflow-hidden border">
+              <iframe
+                title="Event location map"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                style="border:0;"
+                src="https://www.google.com/maps/embed/v1/place?key={{ GOOGLE_MAPS_API_KEY }}&q={{ event.location_name|urlencode }}">
+              </iframe>
+            </div>
           {% else %}
-            <p class="text-muted mb-0">Map unavailable. (Set <code>MAPBOX_TOKEN</code> and provide coordinates.)</p>
+            <p class="text-muted mb-0">Location TBC</p>
           {% endif %}
         </div>
       </div>
@@ -91,9 +120,9 @@
 
             <hr class="my-3">
 
-            <form method="post" action="{% url 'toggle_favorite' event.id %}" id="favoriteForm">
+            <form method="post" action="{% url 'toggle_favorite' event.id %}">
               {% csrf_token %}
-              <button class="btn btn-outline-secondary w-100" type="submit" id="favoriteBtn" aria-label="Toggle favorite">
+              <button class="btn btn-outline-secondary w-100" type="submit" aria-label="Toggle favorite">
                 {% if is_favorited %}
                   <i class="bi bi-star-fill" aria-hidden="true"></i>
                   <span class="ms-1">Unfavorite</span>
@@ -111,50 +140,3 @@
     </div>
   </div>
 {% endblock %}
-
-{% block scripts %}
-  {% if MAPBOX_TOKEN and event.latitude and event.longitude %}
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-    <script>
-      mapboxgl.accessToken = "{{ MAPBOX_TOKEN|escapejs }}";
-      const map = new mapboxgl.Map({
-        container: "map",
-        style: "mapbox://styles/mapbox/streets-v12",
-        center: [Number("{{ event.longitude }}"), Number("{{ event.latitude }}")],
-        zoom: 14
-      });
-      new mapboxgl.Marker()
-        .setLngLat([Number("{{ event.longitude }}"), Number("{{ event.latitude }}")])
-        .addTo(map);
-    </script>
-  {% endif %}
-
-  {% if user.is_authenticated and user|user_is_student %}
-    <script>
-      function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-      }
-
-      const favoriteForm = document.getElementById("favoriteForm");
-      const favoriteBtn = document.getElementById("favoriteBtn");
-      if (favoriteForm && favoriteBtn) {
-        favoriteForm.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const resp = await fetch(favoriteForm.action, {
-            method: "POST",
-            headers: {
-              "X-CSRFToken": getCookie("csrftoken"),
-              "Accept": "application/json"
-            }
-          });
-          if (!resp.ok) return;
-          const data = await resp.json();
-          favoriteBtn.textContent = data.favorited ? "Unfavorite" : "Favorite";
-        });
-      }
-    </script>
-  {% endif %}
-{% endblock %}
-

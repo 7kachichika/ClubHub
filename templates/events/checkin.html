@@ -30,9 +30,16 @@
 
           {% if checked_ticket %}
             <hr class="my-4">
-            <h2 class="h5">Result</h2>
-            <div class="alert alert-success" role="alert">
-              Checked in: <strong>{{ checked_ticket.student.user.username }}</strong> for <strong>{{ checked_ticket.event.title }}</strong>
+            <h2 class="h5">Latest result</h2>
+            <div class="alert alert-light border mb-0" role="alert">
+              Student: <strong>{{ checked_ticket.student.user.username }}</strong><br>
+              Event: <strong>{{ checked_ticket.event.title }}</strong><br>
+              Status:
+              {% if checked_ticket.checked_in %}
+                <strong>Checked in</strong>
+              {% else %}
+                <strong>Not checked in</strong>
+              {% endif %}
             </div>
           {% endif %}
         </div>
@@ -40,4 +47,3 @@
     </div>
   </div>
 {% endblock %}
-

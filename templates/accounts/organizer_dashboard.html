@@ -58,8 +58,29 @@
                 <span class="badge text-bg-dark">Capacity: {{ e.capacity }}</span>
               </div>
             </div>
-            <div class="text-end">
-              <a class="btn btn-outline-secondary btn-sm" href="{% url 'export_attendees_csv' e.id %}" aria-label="Export attendees CSV">Export CSV</a>
+            <div class="text-end d-flex gap-2 flex-wrap justify-content-end">
+              <a
+                class="btn btn-outline-secondary btn-sm"
+                href="{% url 'export_attendees_csv' e.id %}"
+                aria-label="Export attendees CSV"
+              >
+                Export CSV
+              </a>
+
+              <form
+                method="post"
+                action="{% url 'delete_event' e.id %}"
+                onsubmit="return confirm('Delete this event? This will also remove related tickets and cannot be undone.');"
+              >
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  class="btn btn-outline-danger btn-sm"
+                  aria-label="Delete event"
+                >
+                  Delete
+                </button>
+              </form>
             </div>
           </div>
         </div>
