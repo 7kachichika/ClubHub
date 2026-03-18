@@ -431,3 +431,13 @@ body {
     padding-inline: 1rem;
   }
 }
+
+.event-organizer {
+  display: flex;
+  align-items: center;
+  color: #6c757d;
+}
+
+.event-organizer i {
+  flex-shrink: 0;
+}

@@ -1,109 +1,64 @@
 {% extends "base.html" %}
 {% block title %}Home · ClubHub{% endblock %}
 
-{% block page_toolbar %}
-  <div class="page-toolbar border-bottom bg-body-tertiary">
-    <div class="container py-3">
-      <form method="get" class="d-flex flex-column gap-3" aria-label="Search and filter events">
-        <div class="d-flex flex-column flex-xl-row gap-2 align-items-xl-center">
+{% block nav_search %}
+  <div class="navbar-search-shell mx-lg-3 my-3 my-lg-0 flex-grow-1">
+    <form method="get" class="navbar-search-form" id="navbar-event-search" aria-label="Search and filter events">
+      <div class="navbar-search-wrap">
+        <button
+          class="btn navbar-search-trigger"
+          type="button"
+          id="toolbar-toggle"
+          aria-expanded="{% if tag or favorite_only or start or end %}true{% else %}false{% endif %}"
+          aria-controls="toolbar-filter-panel"
+          aria-label="Open filters"
+        >
+          <i class="bi bi-search" aria-hidden="true"></i>
+        </button>
 
-          <div class="toolbar-search position-relative flex-grow-1">
-            <div class="input-group">
-              <span class="input-group-text bg-white border-end-0">
-                <i class="bi bi-search" aria-hidden="true"></i>
-              </span>
-              <input
-                class="form-control border-start-0"
-                type="text"
-                id="q"
-                name="q"
-                value="{{ q }}"
-                placeholder="Search events by name or description"
-                autocomplete="off"
-              >
-              {% if tag %}
-                <input type="hidden" name="tag" value="{{ tag }}">
-              {% endif %}
-              {% if start %}
-                <input type="hidden" name="start" value="{{ start }}">
-              {% endif %}
-              {% if end %}
-                <input type="hidden" name="end" value="{{ end }}">
-              {% endif %}
-              {% if favorite_only %}
-                <input type="hidden" name="favorite" value="1">
-              {% endif %}
-              <button class="btn btn-primary px-3" type="submit">Search</button>
-            </div>
-            <div id="search-history-panel" class="search-history-panel d-none"></div>
-          </div>
+        <input
+          class="form-control navbar-search-input"
+          type="text"
+          id="q"
+          name="q"
+          value="{{ q }}"
+          placeholder="Search events..."
+          autocomplete="off"
+        >
 
-          <div class="d-flex flex-wrap gap-2">
-            <button
-              class="btn {% if tag %}btn-primary{% else %}btn-outline-primary{% endif %}"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#toolbar-tag-panel"
-              aria-expanded="{% if tag %}true{% else %}false{% endif %}"
-              aria-controls="toolbar-tag-panel"
-            >
-              <i class="bi bi-tags" aria-hidden="true"></i>
-              <span class="ms-1">Tag</span>
-            </button>
+        <button class="btn btn-primary navbar-search-submit" type="submit">
+          Search
+        </button>
+      </div>
 
-            <button
-              class="btn {% if favorite_only %}btn-dark{% else %}btn-outline-dark{% endif %}"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#toolbar-favorite-panel"
-              aria-expanded="{% if favorite_only %}true{% else %}false{% endif %}"
-              aria-controls="toolbar-favorite-panel"
-            >
-              <i class="bi bi-heart{% if favorite_only %}-fill{% endif %}" aria-hidden="true"></i>
-              <span class="ms-1">Favorite</span>
-            </button>
+      <div
+        id="toolbar-filter-panel"
+        class="toolbar-floating-panel {% if tag or favorite_only or start or end %}is-open{% endif %}"
+      >
+        <div class="toolbar-floating-panel-inner">
 
-            <button
-              class="btn {% if start or end %}btn-primary{% else %}btn-outline-primary{% endif %}"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#toolbar-date-panel"
-              aria-expanded="{% if start or end %}true{% else %}false{% endif %}"
-              aria-controls="toolbar-date-panel"
-            >
-              <i class="bi bi-calendar-range" aria-hidden="true"></i>
-              <span class="ms-1">Date</span>
-            </button>
-
-            <a class="btn btn-outline-secondary" href="{% url 'event_list' %}">
-              Clear
-            </a>
-          </div>
-        </div>
-
-        <div class="collapse {% if tag %}show{% endif %}" id="toolbar-tag-panel">
-          <div class="toolbar-panel">
+          <div class="toolbar-section">
+            <div class="toolbar-section-label">Tags</div>
             <div class="d-flex flex-wrap gap-2">
               <a
                 class="btn btn-sm {% if not tag %}btn-primary{% else %}btn-outline-primary{% endif %}"
-                href="?q={{ q|urlencode }}{% if start %}&start={{ start|urlencode }}{% endif %}{% if end %}&end={{ end|urlencode }}{% endif %}{% if favorite_only %}&favorite=1{% endif %}"
+                href="?q={{ q|urlencode }}{% if favorite_only %}&favorite=1{% endif %}{% if start %}&start={{ start|urlencode }}{% endif %}{% if end %}&end={{ end|urlencode }}{% endif %}"
               >
                 All tags
               </a>
               {% for t in tags %}
                 <a
                   class="btn btn-sm {% if tag == t.name %}btn-primary{% else %}btn-outline-primary{% endif %}"
-                  href="?q={{ q|urlencode }}&tag={{ t.name|urlencode }}{% if start %}&start={{ start|urlencode }}{% endif %}{% if end %}&end={{ end|urlencode }}{% endif %}{% if favorite_only %}&favorite=1{% endif %}"
+                  href="?q={{ q|urlencode }}&tag={{ t.name|urlencode }}{% if favorite_only %}&favorite=1{% endif %}{% if start %}&start={{ start|urlencode }}{% endif %}{% if end %}&end={{ end|urlencode }}{% endif %}"
                 >
                   {{ t.name }}
                 </a>
               {% endfor %}
             </div>
           </div>
-        </div>
 
-        <div class="collapse {% if favorite_only %}show{% endif %}" id="toolbar-favorite-panel">
-          <div class="toolbar-panel">
+          <div class="toolbar-section">
+            <div class="toolbar-section-label">Favorites</div>
             <div class="d-flex flex-wrap gap-2">
               <a
                 class="btn btn-sm {% if favorite_only %}btn-dark{% else %}btn-outline-dark{% endif %}"
@@ -112,34 +67,46 @@
                 Only my favorites
               </a>
               <a
-                class="btn btn-sm {% if not favorite_only %}btn-outline-dark{% else %}btn-outline-secondary{% endif %}"
+                class="btn btn-sm {% if not favorite_only %}btn-outline-secondary{% else %}btn-outline-dark{% endif %}"
                 href="?q={{ q|urlencode }}{% if tag %}&tag={{ tag|urlencode }}{% endif %}{% if start %}&start={{ start|urlencode }}{% endif %}{% if end %}&end={{ end|urlencode }}{% endif %}"
               >
                 Show all events
               </a>
             </div>
           </div>
-        </div>
 
-        <div class="collapse {% if start or end %}show{% endif %}" id="toolbar-date-panel">
-          <div class="toolbar-panel">
+          <div class="toolbar-section">
+            <div class="toolbar-section-label">Date</div>
             <div class="row g-2 align-items-end">
-              <div class="col-12 col-md-4 col-lg-3">
+              {% if tag %}
+                <input type="hidden" name="tag" value="{{ tag }}">
+              {% endif %}
+              {% if favorite_only %}
+                <input type="hidden" name="favorite" value="1">
+              {% endif %}
+
+              <div class="col-12 col-md-6">
                 <label class="form-label mb-1" for="start">From</label>
                 <input class="form-control" type="datetime-local" id="start" name="start" value="{{ start }}">
               </div>
-              <div class="col-12 col-md-4 col-lg-3">
+
+              <div class="col-12 col-md-6">
                 <label class="form-label mb-1" for="end">To</label>
                 <input class="form-control" type="datetime-local" id="end" name="end" value="{{ end }}">
               </div>
-              <div class="col-12 col-md-4 col-lg-3 d-grid">
-                <button class="btn btn-primary" type="submit">Apply date filter</button>
+
+              <div class="col-12 d-flex gap-2 pt-1">
+                <button class="btn btn-primary" type="submit">Apply filters</button>
+                <a class="btn btn-outline-secondary" href="{% url 'event_list' %}">Clear</a>
               </div>
             </div>
           </div>
+
         </div>
-      </form>
-    </div>
+      </div>
+
+      <div id="search-history-panel" class="search-history-panel d-none"></div>
+    </form>
   </div>
 {% endblock %}
 
@@ -163,6 +130,7 @@
                     data-tags="{% for t in e.tags.all %}{{ t.name|lower }} {% endfor %}"
                     data-start="{{ e.start_at|date:'c' }}"
                     data-favorited="{% if user.is_authenticated and e.id in favorite_event_ids %}1{% else %}0{% endif %}"
+                    data-organizer="{{ e.organizer.user.username|lower }}"
                   >
                     <div class="card shadow-sm h-100 position-relative">
                       <span class="badge bg-primary position-absolute top-0 start-0 m-2">
@@ -190,19 +158,24 @@
                         </h5>
 
                         <div class="text-muted small mb-2">
-                          <div>
-                            <i class="bi bi-calendar-event" aria-hidden="true"></i>
-                            {{ e.start_at|date:"M d, H:i" }}
+  <div>
+    <i class="bi bi-calendar-event" aria-hidden="true"></i>
+    {{ e.start_at|date:"M d, H:i" }}
+  </div>
+  <div>
+    <i class="bi bi-geo-alt" aria-hidden="true"></i>
+    {% if e.location_name %}{{ e.location_name }}{% else %}Location TBC{% endif %}
+  </div>
                           </div>
-                          <div>
-                            <i class="bi bi-geo-alt" aria-hidden="true"></i>
-                            {% if e.location_name %}{{ e.location_name }}{% else %}Location TBC{% endif %}
-                          </div>
-                        </div>
 
-                        <p class="card-text event-desc mb-2">
-                          {{ e.description|default:"(No description)"|truncatechars:140 }}
-                        </p>
+                          <p class="card-text event-desc mb-2">
+                            {{ e.description|default:"(No description)"|truncatechars:140 }}
+                          </p>
+
+                          <div class="event-organizer text-muted small mb-2">
+                            <i class="bi bi-person-circle" aria-hidden="true"></i>
+                            <span class="ms-1">By {{ e.organizer.user.username }}</span>
+                          </div>
 
                         {% with used=e.confirmed_count total=e.capacity %}
                           {% if total %}
@@ -305,6 +278,11 @@
                     {{ e.description|truncatechars:140 }}
                   </p>
 
+                  <div class="event-organizer text-muted small mb-2">
+                    <i class="bi bi-person-circle" aria-hidden="true"></i>
+                    <span class="ms-1">By {{ e.organizer.user.username }}</span>
+                  </div>
+
                   <!-- 进度条 -->
                   {% with used=e.confirmed_count total=e.capacity %}
                     {% if total %}
@@ -357,154 +335,230 @@
   {% endif %}
 
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const qInput = document.getElementById("q");
-      const startInput = document.getElementById("start");
-      const endInput = document.getElementById("end");
-      const cards = document.querySelectorAll(".event-card");
-      const emptyState = document.getElementById("client-filter-empty");
-      const historyPanel = document.getElementById("search-history-panel");
-      const storageKey = "clubhub_search_history";
-      const favoriteOnly = "{{ favorite_only|yesno:'1,0' }}" === "1";
+  document.addEventListener("DOMContentLoaded", function () {
+    const qInput = document.getElementById("q");
+    const startInput = document.getElementById("start");
+    const endInput = document.getElementById("end");
+    const cards = document.querySelectorAll(".event-card");
+    const emptyState = document.getElementById("client-filter-empty");
+    const historyPanel = document.getElementById("search-history-panel");
+    const toolbarToggle = document.getElementById("toolbar-toggle");
+    const toolbarPanel = document.getElementById("toolbar-filter-panel");
+    const searchForm = document.getElementById("navbar-event-search");
+    const storageKey = "clubhub_search_history";
+    const favoriteOnly = "{{ favorite_only|yesno:'1,0' }}" === "1";
 
-      function normalise(value) {
-        return (value || "").toString().trim().toLowerCase();
+    function normalise(value) {
+      return (value || "").toString().trim().toLowerCase();
+    }
+
+    function getHistory() {
+      try {
+        return JSON.parse(localStorage.getItem(storageKey) || "[]");
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function saveHistory(term) {
+      const cleaned = (term || "").trim();
+      if (!cleaned) {
+        return;
       }
 
-      function getHistory() {
-        try {
-          return JSON.parse(localStorage.getItem(storageKey) || "[]");
-        } catch (error) {
-          return [];
-        }
+      let items = getHistory().filter(function (item) {
+        return item.toLowerCase() !== cleaned.toLowerCase();
+      });
+
+      items.unshift(cleaned);
+      items = items.slice(0, 6);
+      localStorage.setItem(storageKey, JSON.stringify(items));
+    }
+
+    function renderHistory() {
+      if (!historyPanel) {
+        return;
       }
 
-      function saveHistory(term) {
-        const cleaned = (term || "").trim();
-        if (!cleaned) {
-          return;
-        }
+      const items = getHistory();
+      if (!items.length) {
+        historyPanel.innerHTML = '<div class="search-history-empty">No recent searches</div>';
+        return;
+      }
 
-        let items = getHistory().filter(function (item) {
-          return item.toLowerCase() !== cleaned.toLowerCase();
+      historyPanel.innerHTML = items.map(function (item) {
+        return '<button type="button" class="search-history-item" data-history-item="' + item.replace(/"/g, '&quot;') + '">' +
+          item +
+          '</button>';
+      }).join("");
+    }
+
+    function showHistory() {
+      if (!historyPanel) {
+        return;
+      }
+      renderHistory();
+      historyPanel.classList.remove("d-none");
+    }
+
+    function hideHistory() {
+      if (!historyPanel) {
+        return;
+      }
+      historyPanel.classList.add("d-none");
+    }
+
+    function openToolbarPanel() {
+      if (!toolbarPanel || !toolbarToggle) {
+        return;
+      }
+      toolbarPanel.classList.add("is-open");
+      toolbarToggle.setAttribute("aria-expanded", "true");
+    }
+
+    function closeToolbarPanel() {
+      if (!toolbarPanel || !toolbarToggle) {
+        return;
+      }
+      toolbarPanel.classList.remove("is-open");
+      toolbarToggle.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleToolbarPanel() {
+      if (!toolbarPanel) {
+        return;
+      }
+      if (toolbarPanel.classList.contains("is-open")) {
+        closeToolbarPanel();
+      } else {
+        openToolbarPanel();
+      }
+    }
+
+    function filterCards() {
+      if (!cards.length) {
+        return;
+      }
+
+      const searchText = normalise(qInput ? qInput.value : "");
+      let startDate = startInput && startInput.value ? new Date(startInput.value) : null;
+      let endDate = endInput && endInput.value ? new Date(endInput.value) : null;
+
+      if (startDate && endDate && startDate > endDate) {
+        const temp = startDate;
+        startDate = endDate;
+        endDate = temp;
+      }
+
+      let visibleCount = 0;
+
+      cards.forEach(function (card) {
+        const title = normalise(card.dataset.title);
+        const description = normalise(card.dataset.description);
+        const location = normalise(card.dataset.location);
+        const tags = normalise(card.dataset.tags);
+        const eventDate = card.dataset.start ? new Date(card.dataset.start) : null;
+        const isFavorited = card.dataset.favorited === "1";
+
+        const matchesText =
+          !searchText ||
+          title.includes(searchText) ||
+          description.includes(searchText) ||
+          location.includes(searchText) ||
+          tags.includes(searchText);
+
+        const matchesStart = !startDate || (eventDate && eventDate >= startDate);
+        const matchesEnd = !endDate || (eventDate && eventDate <= endDate);
+        const matchesFavorite = !favoriteOnly || isFavorited;
+
+        const shouldShow = matchesText && matchesStart && matchesEnd && matchesFavorite;
+        card.classList.toggle("d-none", !shouldShow);
+
+        if (shouldShow) {
+          visibleCount += 1;
+        }
+      });
+
+      if (emptyState) {
+        emptyState.classList.toggle("d-none", visibleCount !== 0);
+      }
+    }
+
+    if (toolbarToggle) {
+      toolbarToggle.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleToolbarPanel();
+      });
+    }
+
+    if (qInput) {
+      qInput.addEventListener("focus", showHistory);
+      qInput.addEventListener("click", function (event) {
+        event.stopPropagation();
+        showHistory();
+      });
+
+      qInput.addEventListener("input", function () {
+        showHistory();
+        filterCards();
+      });
+
+      if (qInput.form) {
+        qInput.form.addEventListener("submit", function () {
+          saveHistory(qInput.value);
         });
-
-        items.unshift(cleaned);
-        items = items.slice(0, 6);
-        localStorage.setItem(storageKey, JSON.stringify(items));
       }
+    }
 
-      function renderHistory() {
-        if (!historyPanel) {
+    if (startInput) {
+      startInput.addEventListener("change", filterCards);
+    }
+
+    if (endInput) {
+      endInput.addEventListener("change", filterCards);
+    }
+
+    if (historyPanel) {
+      historyPanel.addEventListener("mousedown", function (event) {
+        const button = event.target.closest("[data-history-item]");
+        if (!button || !qInput) {
           return;
         }
+        qInput.value = button.getAttribute("data-history-item");
+        filterCards();
+      });
 
-        const items = getHistory();
-        if (!items.length) {
-          historyPanel.innerHTML = '<div class="search-history-empty">No recent searches</div>';
-          return;
-        }
+      historyPanel.addEventListener("click", function (event) {
+        event.stopPropagation();
+      });
+    }
 
-        historyPanel.innerHTML = items.map(function (item) {
-          return '<button type="button" class="search-history-item" data-history-item="' + item.replace(/"/g, '&quot;') + '">' +
-            item +
-            '</button>';
-        }).join("");
-      }
+    if (toolbarPanel) {
+      toolbarPanel.addEventListener("click", function (event) {
+        event.stopPropagation();
+      });
+    }
 
-      function showHistory() {
-        if (!historyPanel) {
-          return;
-        }
-        renderHistory();
-        historyPanel.classList.remove("d-none");
-      }
+    if (searchForm) {
+      searchForm.addEventListener("click", function (event) {
+        event.stopPropagation();
+      });
+    }
 
-      function hideHistory() {
-        if (!historyPanel) {
-          return;
-        }
-        setTimeout(function () {
-          historyPanel.classList.add("d-none");
-        }, 120);
-      }
-
-      function filterCards() {
-        if (!cards.length) {
-          return;
-        }
-
-        const searchText = normalise(qInput ? qInput.value : "");
-        let startDate = startInput && startInput.value ? new Date(startInput.value) : null;
-        let endDate = endInput && endInput.value ? new Date(endInput.value) : null;
-
-        if (startDate && endDate && startDate > endDate) {
-          const temp = startDate;
-          startDate = endDate;
-          endDate = temp;
-        }
-
-        let visibleCount = 0;
-
-        cards.forEach(function (card) {
-          const title = normalise(card.dataset.title);
-          const description = normalise(card.dataset.description);
-          const location = normalise(card.dataset.location);
-          const tags = normalise(card.dataset.tags);
-          const eventDate = card.dataset.start ? new Date(card.dataset.start) : null;
-          const isFavorited = card.dataset.favorited === "1";
-
-          const matchesText =
-            !searchText ||
-            title.includes(searchText) ||
-            description.includes(searchText) ||
-            location.includes(searchText) ||
-            tags.includes(searchText);
-
-          const matchesStart = !startDate || (eventDate && eventDate >= startDate);
-          const matchesEnd = !endDate || (eventDate && eventDate <= endDate);
-          const matchesFavorite = !favoriteOnly || isFavorited;
-
-          const shouldShow = matchesText && matchesStart && matchesEnd && matchesFavorite;
-          card.classList.toggle("d-none", !shouldShow);
-
-          if (shouldShow) {
-            visibleCount += 1;
-          }
-        });
-
-        if (emptyState) {
-          emptyState.classList.toggle("d-none", visibleCount !== 0);
-        }
-      }
-
-      if (qInput) {
-        qInput.addEventListener("focus", showHistory);
-        qInput.addEventListener("click", showHistory);
-        qInput.addEventListener("blur", hideHistory);
-
-        if (qInput.form) {
-          qInput.form.addEventListener("submit", function () {
-            saveHistory(qInput.value);
-          });
-        }
-      }
-
-      if (historyPanel) {
-        historyPanel.addEventListener("mousedown", function (event) {
-          const button = event.target.closest("[data-history-item]");
-          if (!button || !qInput) {
-            return;
-          }
-          qInput.value = button.getAttribute("data-history-item");
-        });
-      }
-
-      qInput && qInput.addEventListener("input", filterCards);
-      startInput && startInput.addEventListener("change", filterCards);
-      endInput && endInput.addEventListener("change", filterCards);
-
-      filterCards();
+    document.addEventListener("click", function () {
+      hideHistory();
+      closeToolbarPanel();
     });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        hideHistory();
+        closeToolbarPanel();
+      }
+    });
+
+    filterCards();
+  });
   </script>
 {% endblock %}
