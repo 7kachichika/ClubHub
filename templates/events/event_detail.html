@@ -22,10 +22,29 @@
           <span class="badge text-bg-light text-muted">No tags</span>
         {% endfor %}
       </div>
-      <div class="event-organizer text-muted mb-3">
-        <i class="bi bi-person-circle" aria-hidden="true"></i>
-        <span class="ms-1">Organized by {{ event.organizer.user.username }}</span>
+
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="event-organizer mb-0 border-0 p-0">
+          <i class="bi bi-person-circle" aria-hidden="true"></i>
+          <span class="ms-1">{{ event.organizer.user.username }}</span>
+        </div>
+
+        {% if user.is_authenticated and user|user_is_student %}
+          <form method="post"
+                action="{% url 'toggle_follow_organizer' event.organizer.id %}"
+                class="m-0">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+
+            <button
+              type="submit"
+              class="btn btn-sm {% if is_following_organizer %}btn-dark{% else %}btn-outline-dark{% endif %}">
+              {% if is_following_organizer %}Following{% else %}Follow{% endif %}
+            </button>
+          </form>
+        {% endif %}
       </div>
+      
     </div>
     <div class="text-end">
       <div class="stat-card px-3 py-2">
@@ -34,8 +53,6 @@
       </div>
     </div>
   </div>
-
-
   
   <div class="row g-3">
     <div class="col-12 col-lg-7">
@@ -45,97 +62,17 @@
           <p class="mb-0">{{ event.description|default:"(No description)"|linebreaksbr }}</p>
         </div>
       </div>
-
-      <div class="card-body d-flex flex-column">
-        <h5 class="card-title mb-1">
-          <a href="{% url 'event_detail' e.id %}" class="text-decoration-none text-dark">
-            {{ e.title }}
-          </a>
-        </h5>
-
-        <div class="text-muted small mb-2">
-          <div>
-            <i class="bi bi-calendar-event" aria-hidden="true"></i>
-            {{ e.start_at|date:"M d, H:i" }}
-          </div>
-          <div>
-            <i class="bi bi-geo-alt" aria-hidden="true"></i>
-            {% if e.location_name %}{{ e.location_name }}{% else %}Location TBC{% endif %}
-          </div>
-        </div>
-
-        <p class="card-text event-desc mb-2">
-          {{ e.description|default:"(No description)"|truncatechars:140 }}
-        </p>
-
-        {% with used=e.confirmed_count total=e.capacity %}
-          {% if total %}
-            {% widthratio used total 100 as pct %}
-            <div class="progress event-progress mb-1">
-              <div
-                class="progress-bar {% if pct >= 80 %}bg-danger{% elif pct >= 50 %}bg-warning{% else %}bg-success{% endif %}"
-                style="width: {{ pct }}%;"
-              ></div>
-            </div>
-          {% endif %}
-        {% endwith %}
-
-        <div class="small text-muted mb-2">
-          {{ e.confirmed_count }} / {{ e.capacity }} confirmed
-        </div>
-
-        {% if e.matched_tags %}
-          <div class="small text-primary mb-1">
-            Because you like:
-            {% for t in e.matched_tags|slice:":2" %}
-              {{ t }}{% if not forloop.last %}, {% endif %}
-            {% endfor %}
-          </div>
-        {% endif %}
-
-        <div class="event-tags mt-2">
-          {% for t in e.tags.all %}
-            <span class="badge bg-secondary me-1 mb-1">{{ t.name }}</span>
-          {% empty %}
-            <span class="badge text-bg-light text-muted">No tags</span>
-          {% endfor %}
-        </div>
-
-        <div class="event-organizer mt-auto pt-3">
-          <i class="bi bi-person-circle" aria-hidden="true"></i>
-          <span class="ms-2">{{ e.organizer.user.username }}</span>
-        </div>
-      </div>
     </div>
 
     <div class="col-12 col-lg-5">
       <div class="card shadow-sm card-hover">
-        <div class="card-body d-flex flex-column">
-          <h5 class="card-title mb-1">
-            <a href="{% url 'event_detail' e.id %}" class="text-decoration-none text-dark">
-              {{ e.title }}
-            </a>
-          </h5>
+        <div class="card-body">
+          <h2 class="h5 mb-3">Booking</h2>
 
-          <div class="text-muted small mb-2">
-            <div>
-              <i class="bi bi-calendar-event" aria-hidden="true"></i>
-              {{ e.start_at|date:"M d, H:i" }}
-            </div>
-            <div>
-              <i class="bi bi-geo-alt" aria-hidden="true"></i>
-              {% if e.location_name %}{{ e.location_name }}{% else %}Location TBC{% endif %}
-            </div>
-          </div>
-
-          <p class="card-text event-desc mb-2">
-            {{ e.description|default:"(No description)"|truncatechars:140 }}
-          </p>
-
-          {% with used=e.confirmed_count total=e.capacity %}
+          {% with used=confirmed_count total=event.capacity %}
             {% if total %}
               {% widthratio used total 100 as pct %}
-              <div class="progress event-progress mb-1">
+              <div class="progress event-progress mb-2">
                 <div
                   class="progress-bar {% if pct >= 80 %}bg-danger{% elif pct >= 50 %}bg-warning{% else %}bg-success{% endif %}"
                   style="width: {{ pct }}%;"
@@ -144,33 +81,52 @@
             {% endif %}
           {% endwith %}
 
-          <div class="small text-muted mb-2">
-            {{ e.confirmed_count }} / {{ e.capacity }} confirmed
+          <div class="small text-muted mb-3">
+            {{ confirmed_count }} / {{ event.capacity }} confirmed
           </div>
 
-          {% if e.matched_tags %}
-            <div class="small text-primary mb-1">
-              Because you like:
-              {% for t in e.matched_tags|slice:":2" %}
-                {{ t }}{% if not forloop.last %}, {% endif %}
-              {% endfor %}
+          {% if user.is_authenticated and user|user_is_student %}
+            {% if student_ticket %}
+              {% if student_ticket.status == "confirmed" %}
+                <div class="alert alert-success mb-3" role="alert">
+                  Your booking is confirmed.
+                </div>
+              {% elif student_ticket.status == "waitlisted" %}
+                <div class="alert alert-warning mb-3" role="alert">
+                  You are currently on the waitlist.
+                </div>
+              {% endif %}
+
+              <form method="post" action="{% url 'cancel_ticket' student_ticket.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger w-100">Cancel booking</button>
+              </form>
+            {% else %}
+              <form method="post" action="{% url 'book_event' event.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary w-100">
+                  {% if capacity_available %}Book now{% else %}Join waitlist{% endif %}
+                </button>
+              </form>
+            {% endif %}
+
+            <form method="post" action="{% url 'toggle_favorite' event.id %}" class="mt-2">
+              {% csrf_token %}
+              <button
+                type="submit"
+                class="btn w-100 {% if is_favorited %}btn-dark{% else %}btn-outline-dark{% endif %}"
+              >
+                {% if is_favorited %}Favorited{% else %}Add to favorites{% endif %}
+              </button>
+            </form>
+          {% elif not user.is_authenticated %}
+            <div class="alert alert-info mb-0" role="alert">
+              Please <a href="{% url 'login' %}">log in</a> as a student to book or save this event.
             </div>
           {% endif %}
-
-          <div class="event-tags mt-2">
-            {% for t in e.tags.all %}
-              <span class="badge bg-secondary me-1 mb-1">{{ t.name }}</span>
-            {% empty %}
-              <span class="badge text-bg-light text-muted">No tags</span>
-            {% endfor %}
-          </div>
-
-          <div class="event-organizer mt-auto pt-3">
-            <i class="bi bi-person-circle" aria-hidden="true"></i>
-            <span class="ms-2">{{ e.organizer.user.username }}</span>
-          </div>
         </div>
       </div>
     </div>
   </div>
+
 {% endblock %}
