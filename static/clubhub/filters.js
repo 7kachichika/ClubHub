@@ -1,5 +1,17 @@
 document.addEventListener("DOMContentLoaded", function () {
+  const qInput = document.getElementById("q");
+  const startInput = document.getElementById("start");
+  const endInput = document.getElementById("end");
+  const cards = document.querySelectorAll(".event-card");
+  const emptyState = document.getElementById("client-filter-empty");
+  const historyPanel = document.getElementById("search-history-panel");
+  const toolbarToggle = document.getElementById("toolbar-toggle");
+  const toolbarPanel = document.getElementById("toolbar-filter-panel");
+  const searchForm = document.getElementById("navbar-event-search");
+
+  // ⭐ 从 Django 注入变量（关键）
   const favoriteOnly = document.body.dataset.favorite === "1";
+
   const storageKey = "clubhub_search_history";
 
   function normalise(value) {
@@ -18,14 +30,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const cleaned = (term || "").trim();
     if (!cleaned) return;
 
-    let items = getHistory().filter((item) => item.toLowerCase() !== cleaned.toLowerCase());
+    let items = getHistory().filter(i => i.toLowerCase() !== cleaned.toLowerCase());
     items.unshift(cleaned);
     items = items.slice(0, 6);
 
     localStorage.setItem(storageKey, JSON.stringify(items));
   }
 
-  function renderHistory(historyPanel) {
+  function renderHistory() {
     if (!historyPanel) return;
 
     const items = getHistory();
@@ -35,191 +47,118 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    historyPanel.innerHTML = items
-      .map(
-        (item) =>
-          `<button type="button" class="search-history-item" data-history-item="${item.replace(/"/g, "&quot;")}">${item}</button>`
-      )
-      .join("");
+    historyPanel.innerHTML = items.map(item =>
+      `<button type="button" class="search-history-item" data-history-item="${item.replace(/"/g, '&quot;')}">${item}</button>`
+    ).join("");
   }
 
-  function showHistory(historyPanel) {
+  function showHistory() {
     if (!historyPanel) return;
-    renderHistory(historyPanel);
+    renderHistory();
     historyPanel.classList.remove("d-none");
   }
 
-  function hideHistory(historyPanel) {
+  function hideHistory() {
     if (!historyPanel) return;
     historyPanel.classList.add("d-none");
   }
 
-  function initToolbar(toggle, panel) {
-    if (!toggle || !panel) return;
+  function toggleToolbar() {
+    if (!toolbarPanel) return;
 
-    function openToolbar() {
-      panel.classList.add("is-open");
-      toggle.setAttribute("aria-expanded", "true");
+    const open = toolbarPanel.classList.toggle("is-open");
+
+    if (toolbarToggle) {
+      toolbarToggle.setAttribute("aria-expanded", open ? "true" : "false");
     }
-
-    function closeToolbar() {
-      panel.classList.remove("is-open");
-      toggle.setAttribute("aria-expanded", "false");
-    }
-
-    function toggleToolbar() {
-      if (panel.classList.contains("is-open")) {
-        closeToolbar();
-      } else {
-        openToolbar();
-      }
-    }
-
-    toggle.addEventListener("click", function (event) {
-      event.preventDefault();
-      event.stopPropagation();
-      toggleToolbar();
-    });
-
-    document.addEventListener("click", function (event) {
-      if (
-        panel.classList.contains("is-open") &&
-        !panel.contains(event.target) &&
-        event.target !== toggle &&
-        !toggle.contains(event.target)
-      ) {
-        closeToolbar();
-      }
-    });
-
-    document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") {
-        closeToolbar();
-      }
-    });
   }
 
-  function initHomeSearch() {
-    const qInput = document.getElementById("q");
-    const startInput = document.getElementById("start");
-    const endInput = document.getElementById("end");
-    const cards = document.querySelectorAll(".event-card");
-    const emptyState = document.getElementById("client-filter-empty");
-    const historyPanel = document.getElementById("search-history-panel");
-    const toolbarToggle = document.getElementById("toolbar-toggle");
-    const toolbarPanel = document.getElementById("toolbar-filter-panel");
-    const searchForm = document.getElementById("navbar-event-search");
+  function filterCards() {
+    if (!cards.length) return;
 
-    if (!searchForm) return;
+    const searchText = normalise(qInput?.value);
 
-    initToolbar(toolbarToggle, toolbarPanel);
+    let startDate = startInput?.value ? new Date(startInput.value) : null;
+    let endDate = endInput?.value ? new Date(endInput.value) : null;
 
-    function filterCards() {
-      if (!cards.length) return;
-
-      const searchText = normalise(qInput?.value);
-
-      let startDate = startInput?.value ? new Date(startInput.value) : null;
-      let endDate = endInput?.value ? new Date(endInput.value) : null;
-
-      if (startDate && endDate && startDate > endDate) {
-        [startDate, endDate] = [endDate, startDate];
-      }
-
-      let visible = 0;
-
-      cards.forEach((card) => {
-        const title = normalise(card.dataset.title);
-        const desc = normalise(card.dataset.description);
-        const location = normalise(card.dataset.location);
-        const tags = normalise(card.dataset.tags);
-        const organizer = normalise(card.dataset.organizer);
-        const eventDate = card.dataset.start ? new Date(card.dataset.start) : null;
-        const isFavorited = card.dataset.favorited === "1";
-
-        const matchText =
-          !searchText ||
-          title.includes(searchText) ||
-          desc.includes(searchText) ||
-          location.includes(searchText) ||
-          tags.includes(searchText) ||
-          organizer.includes(searchText);
-
-        const matchStart = !startDate || (eventDate && eventDate >= startDate);
-        const matchEnd = !endDate || (eventDate && eventDate <= endDate);
-        const matchFav = !favoriteOnly || isFavorited;
-
-        const show = matchText && matchStart && matchEnd && matchFav;
-        card.classList.toggle("d-none", !show);
-
-        if (show) visible += 1;
-      });
-
-      if (emptyState) {
-        emptyState.classList.toggle("d-none", visible !== 0);
-      }
+    if (startDate && endDate && startDate > endDate) {
+      [startDate, endDate] = [endDate, startDate];
     }
 
-    qInput?.addEventListener("input", function () {
-      showHistory(historyPanel);
-      filterCards();
+    let visible = 0;
+
+    cards.forEach(card => {
+      const title = normalise(card.dataset.title);
+      const desc = normalise(card.dataset.description);
+      const location = normalise(card.dataset.location);
+      const tags = normalise(card.dataset.tags);
+      const eventDate = card.dataset.start ? new Date(card.dataset.start) : null;
+      const isFavorited = card.dataset.favorited === "1";
+
+      const matchText =
+        !searchText ||
+        title.includes(searchText) ||
+        desc.includes(searchText) ||
+        location.includes(searchText) ||
+        tags.includes(searchText);
+
+      const matchStart = !startDate || (eventDate && eventDate >= startDate);
+      const matchEnd = !endDate || (eventDate && eventDate <= endDate);
+      const matchFav = !favoriteOnly || isFavorited;
+
+      const show = matchText && matchStart && matchEnd && matchFav;
+
+      card.classList.toggle("d-none", !show);
+
+      if (show) visible++;
     });
 
-    qInput?.addEventListener("focus", function () {
-      showHistory(historyPanel);
-    });
+    if (emptyState) {
+      emptyState.classList.toggle("d-none", visible !== 0);
+    }
+  }
 
-    searchForm.addEventListener("submit", function () {
-      if (qInput) saveHistory(qInput.value);
-    });
+  // ===== 绑定 =====
 
-    startInput?.addEventListener("change", filterCards);
-    endInput?.addEventListener("change", filterCards);
+  toolbarToggle?.addEventListener("click", e => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleToolbar();
+  });
 
-    historyPanel?.addEventListener("mousedown", function (event) {
-      const button = event.target.closest("[data-history-item]");
-      if (!button || !qInput) return;
-
-      qInput.value = button.dataset.historyItem;
-      hideHistory(historyPanel);
-      filterCards();
-    });
-
-    document.addEventListener("click", function (event) {
-      if (historyPanel && !historyPanel.contains(event.target) && event.target !== qInput) {
-        hideHistory(historyPanel);
-      }
-    });
-
-    document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") {
-        hideHistory(historyPanel);
-      }
-    });
-
+  qInput?.addEventListener("input", () => {
+    showHistory();
     filterCards();
-  }
+  });
 
-  function initGlobalSearch() {
-    const qInput = document.getElementById("global-q");
-    const historyPanel = null;
-    const toolbarToggle = document.getElementById("global-toolbar-toggle");
-    const toolbarPanel = document.getElementById("global-toolbar-filter-panel");
-    const searchForm = document.getElementById("navbar-global-search");
+  qInput?.addEventListener("focus", showHistory);
 
-    if (!searchForm) return;
+  qInput?.form?.addEventListener("submit", () => {
+    saveHistory(qInput.value);
+  });
 
-    initToolbar(toolbarToggle, toolbarPanel);
+  startInput?.addEventListener("change", filterCards);
+  endInput?.addEventListener("change", filterCards);
 
-    qInput?.addEventListener("focus", function () {
-      // 非主页只保留 toolbar，不显示 history panel
-    });
+  historyPanel?.addEventListener("mousedown", e => {
+    const btn = e.target.closest("[data-history-item]");
+    if (!btn || !qInput) return;
 
-    searchForm.addEventListener("submit", function () {
-      if (qInput) saveHistory(qInput.value);
-    });
-  }
+    qInput.value = btn.dataset.historyItem;
+    filterCards();
+  });
 
-  initHomeSearch();
-  initGlobalSearch();
+  document.addEventListener("click", () => {
+    hideHistory();
+    toolbarPanel?.classList.remove("is-open");
+  });
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      hideHistory();
+      toolbarPanel?.classList.remove("is-open");
+    }
+  });
+
+  filterCards();
 });
