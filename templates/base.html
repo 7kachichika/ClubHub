@@ -22,15 +22,19 @@
                 </span>
                 <span>
                   UofG ClubHub
+                  <!--
                   <span class="d-block small fw-normal text-secondary" style="line-height: 1;">Campus events, one hub.</span>
+                   -->
                 </span>
               </a>
               <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
               </button>
               <div class="collapse navbar-collapse" id="nav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <ul class="navbar-nav me-lg-3 mb-2 mb-lg-0">
+                  <!--  
                   <li class="nav-item"><a class="nav-link" href="{% url 'event_list' %}">Home</a></li>
+                   -->
                   {% if user.is_authenticated and user|user_is_student %}
                     <li class="nav-item"><a class="nav-link" href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
                   {% endif %}
@@ -40,25 +44,28 @@
                     <li class="nav-item"><a class="nav-link" href="{% url 'organizer_checkin' %}">Check-in</a></li>
                   {% endif %}
                 </ul>
-                <ul class="navbar-nav ms-auto align-items-lg-center">
-                  {% if user.is_authenticated %}
-                    <li class="nav-item d-flex align-items-center">
-                      <span class="nav-link nav-user-greeting pe-lg-2">Hi, {{ user.username }}</span>
-                    </li>
-                    <li class="nav-item d-flex align-items-center">
-                      <a class="nav-link" href="{% url 'logout' %}">Logout</a>
-                    </li>
-                  {% else %}
-                    <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">Sign up</a></li>
-                  {% endif %}
-                </ul>
-              </div>
+
+  {% block nav_search %}
+    <div class="navbar-search-shell mx-lg-3 my-3 my-lg-0 flex-grow-1 d-none d-lg-block"></div>
+  {% endblock %}
+
+  <ul class="navbar-nav ms-lg-3 ms-auto align-items-lg-center">
+    {% if user.is_authenticated %}
+      <li class="nav-item d-flex align-items-center">
+        <span class="nav-link nav-user-greeting pe-lg-2">Hi, {{ user.username }}</span>
+      </li>
+      <li class="nav-item d-flex align-items-center">
+        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+      </li>
+    {% else %}
+      <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">Sign up</a></li>
+    {% endif %}
+  </ul>
+</div>
             </div>
           </nav>
 
-          {% block page_toolbar %}
-          {% endblock %}
         </header>
 
     <main class="container py-4">
