@@ -30,8 +30,11 @@ SECRET_KEY = 'django-insecure-r_x&dl5ie^)!(vpk$#igq8)_)y_@(-pl(t59#kl$jk45!5ib3!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", "172.20.10.6"]
-
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "clubhub.pythonanywhere.com",
+]
 
 # Application definition
 
