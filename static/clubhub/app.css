@@ -310,3 +310,124 @@ body {
     scroll-padding-top: 7rem;
   }
 }
+
+.navbar-search-shell {
+  min-width: 0;
+  max-width: 680px;
+}
+
+.navbar-search-form {
+  position: relative;
+  width: 100%;
+}
+
+.navbar-search-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+}
+
+.navbar-search-trigger {
+  border: 0;
+  border-right: 1px solid rgba(15, 23, 42, 0.08);
+  background: #fff;
+  color: #0f172a;
+  padding: 0.75rem 0.95rem;
+  border-radius: 0;
+}
+
+.navbar-search-trigger:hover,
+.navbar-search-trigger:focus {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.navbar-search-input {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none !important;
+  min-width: 0;
+}
+
+.navbar-search-input:focus {
+  box-shadow: none !important;
+}
+
+.navbar-search-submit {
+  border-radius: 0;
+  white-space: nowrap;
+}
+
+.toolbar-floating-panel {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  left: 0;
+  right: 0;
+  z-index: 1045;
+  display: none;
+}
+
+.toolbar-floating-panel.is-open {
+  display: block;
+}
+
+.toolbar-floating-panel-inner {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 0.75rem;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+  padding: 1rem;
+  max-height: min(70vh, 32rem);
+  overflow-y: auto;
+}
+
+.toolbar-section + .toolbar-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.toolbar-section-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.search-history-panel {
+  top: calc(100% + 0.35rem);
+}
+
+.site-header {
+  overflow: visible;
+}
+
+@media (max-width: 991.98px) {
+  .navbar-search-shell {
+    width: 100%;
+    max-width: none;
+  }
+
+  .toolbar-floating-panel {
+    position: static;
+    margin-top: 0.75rem;
+  }
+
+  .toolbar-floating-panel-inner {
+    max-height: none;
+  }
+
+  .navbar-search-wrap {
+    border-radius: 0.75rem;
+  }
+
+  .navbar-search-submit {
+    padding-inline: 1rem;
+  }
+}
