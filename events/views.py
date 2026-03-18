@@ -13,6 +13,8 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from accounts.auth import get_organizer_profile, get_student_profile, is_organizer, is_student
+from accounts.models import OrganizerProfile
 
 from accounts.auth import (
     get_organizer_profile,
@@ -104,8 +106,96 @@ def _get_recommended_events(student, events, limit: int = 6):
     scored.sort(key=lambda x: x[0], reverse=True)
     return [event for _, event in scored[:limit]]
 
+def _parse_filter_datetime(value: str, *, is_end: bool = False):
+    value = (value or "").strip()
+    if not value:
+        return None
+
+    try:
+        dt = timezone.datetime.fromisoformat(value)
+    except ValueError:
+        try:
+            d = timezone.datetime.strptime(value, "%Y-%m-%d").date()
+        except ValueError:
+            return None
+        time_value = timezone.datetime.max.time().replace(microsecond=0) if is_end else timezone.datetime.min.time()
+        dt = timezone.datetime.combine(d, time_value)
+
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt)
+
+    return dt
 
 def event_list(request):
+    qs = (
+        Event.objects.all()
+        .select_related("organizer__user")
+        .prefetch_related("tags")
+        .annotate(
+            confirmed_count=Count(
+                "tickets", filter=Q(tickets__status=Ticket.Status.CONFIRMED)
+            )
+        )
+    )
+
+    q = (request.GET.get("q") or "").strip()
+    tag = (request.GET.get("tag") or "").strip()
+    start = (request.GET.get("start") or "").strip()
+    end = (request.GET.get("end") or "").strip()
+    favorite_only = request.GET.get("favorite") == "1"
+
+    favorite_event_ids = set()
+    student = None
+    if request.user.is_authenticated and is_student(request.user):
+        student = get_student_profile(request.user)
+        favorite_event_ids = set(
+            student.favorite_events.values_list("id", flat=True)
+        )
+
+    if q:
+        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+    if tag:
+        qs = qs.filter(tags__name__iexact=tag)
+
+    start_dt = _parse_filter_datetime(start, is_end=False)
+    if start_dt:
+        qs = qs.filter(start_at__gte=start_dt)
+
+    end_dt = _parse_filter_datetime(end, is_end=True)
+    if end_dt:
+        qs = qs.filter(start_at__lte=end_dt)
+
+    if favorite_only:
+        if favorite_event_ids:
+            qs = qs.filter(id__in=favorite_event_ids)
+        else:
+            qs = qs.none()
+
+    tags = Tag.objects.order_by("name")
+    events = list(qs.distinct())
+
+    recommended_events = []
+    if student:
+        recommended_events = _get_recommended_events(student, events, limit=6)
+
+    recommended_ids = {e.id for e in recommended_events}
+    all_events = [e for e in events if e.id not in recommended_ids]
+
+    return render(
+        request,
+        "events/event_list.html",
+        {
+            "events": all_events,
+            "recommended_events": recommended_events,
+            "tags": tags,
+            "q": q,
+            "tag": tag,
+            "start": start,
+            "end": end,
+            "favorite_only": favorite_only,
+            "favorite_event_ids": favorite_event_ids,
+        },
+    )
     qs = (
         Event.objects.all()
         .select_related("organizer__user")
@@ -168,7 +258,6 @@ def event_list(request):
         },
     )
 
-
 def event_detail(request, event_id: int):
     event = get_object_or_404(
         Event.objects.select_related("organizer__user").prefetch_related("tags"),
@@ -181,6 +270,8 @@ def event_detail(request, event_id: int):
 
     student_ticket = None
     is_favorited = False
+    is_following_organizer = False
+
     if request.user.is_authenticated and is_student(request.user):
         student = get_student_profile(request.user)
         student_ticket = Ticket.objects.filter(
@@ -189,6 +280,9 @@ def event_detail(request, event_id: int):
             status__in=[Ticket.Status.CONFIRMED, Ticket.Status.WAITLISTED],
         ).first()
         is_favorited = student.favorite_events.filter(pk=event.pk).exists()
+        is_following_organizer = student.followed_organizers.filter(
+            pk=event.organizer.pk
+        ).exists()
 
     return render(
         request,
@@ -199,10 +293,10 @@ def event_detail(request, event_id: int):
             "capacity_available": capacity_available,
             "student_ticket": student_ticket,
             "is_favorited": is_favorited,
+            "is_following_organizer": is_following_organizer,
             "GOOGLE_MAPS_API_KEY": settings.GOOGLE_MAPS_API_KEY,
         },
     )
-
 
 @student_required
 @require_POST
@@ -256,6 +350,28 @@ def toggle_favorite(request, event_id: int):
     if wants_json:
         return JsonResponse({"favorited": favorited})
     return redirect("event_detail", event_id=event_id)
+
+@student_required
+@require_POST
+def toggle_follow_organizer(request, organizer_id: int):
+    organizer = get_object_or_404(OrganizerProfile, pk=organizer_id)
+    student = get_student_profile(request.user)
+
+    if student.followed_organizers.filter(pk=organizer.pk).exists():
+        student.followed_organizers.remove(organizer)
+        following = False
+    else:
+        student.followed_organizers.add(organizer)
+        following = True
+
+    rebuild_and_save_student_preferences(student)
+
+    wants_json = "application/json" in (request.headers.get("Accept") or "")
+    if wants_json:
+        return JsonResponse({"following": following})
+
+    next_url = request.POST.get("next")
+    return redirect(next_url or "event_list")
 
 @organizer_required
 def create_event(request):

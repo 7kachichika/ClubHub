@@ -18,6 +18,12 @@ class StudentProfile(models.Model):
         auto_now=True
     )
 
+    followed_organizers = models.ManyToManyField(
+    "accounts.OrganizerProfile",
+    blank=True,
+    related_name="followers",
+)
+
     def __str__(self) -> str:
         return f"StudentProfile(user={self.user_id})"
 
