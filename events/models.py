@@ -17,6 +17,9 @@ class Event(models.Model):
     )
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    
+    cover_image = models.ImageField(upload_to="event_covers/",blank=True,null=True)
+    
     start_at = models.DateTimeField()
     capacity = models.PositiveIntegerField()
 

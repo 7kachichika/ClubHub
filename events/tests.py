@@ -796,7 +796,7 @@ class RecommendationLogicTests(TestCase):
             capacity=10,
         )
         top_event.tags.add(self.music_tag)
-        top_event.confirmed_count = 2  # 3 + 1 + 2 = 6
+        top_event.confirmed_count = 2  
 
         second_event = Event.objects.create(
             organizer=self.organizer,
@@ -806,7 +806,7 @@ class RecommendationLogicTests(TestCase):
             capacity=10,
         )
         second_event.tags.add(self.tech_tag)
-        second_event.confirmed_count = 6  # 1 + 3 = 4
+        second_event.confirmed_count = 6  
 
         low_event = Event.objects.create(
             organizer=self.organizer,
@@ -826,7 +826,7 @@ class RecommendationLogicTests(TestCase):
             capacity=10,
         )
         past_event.tags.add(self.music_tag)
-        past_event.confirmed_count = 100  # 即使很高，也不应被推荐
+        past_event.confirmed_count = 100  
 
         recommended = _get_recommended_events(
             self.student,

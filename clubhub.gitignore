@@ -7,6 +7,7 @@ __pycache__/
 .venv/
 venv/
 env/
+.env
 
 # 数据库文件 (开发环境)
 db.sqlite3

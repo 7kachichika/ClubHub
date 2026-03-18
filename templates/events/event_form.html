@@ -3,25 +3,21 @@
 
 {% block content %}
   <div class="row justify-content-center">
-    <div class="col-12 col-lg-8">
-      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-3">
+    <div class="col-12 col-xl-9">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
-          <h1 class="h3 mb-1">Create Event</h1>
-          <p class="text-muted mb-0">Publish event details for students to discover and book.</p>
+          <h1 class="h3 mb-1">Create event</h1>
+          <p class="text-muted mb-0">Publish a new society activity with capacity, tags, and map location.</p>
         </div>
         <a class="btn btn-outline-secondary" href="{% url 'organizer_dashboard' %}">Back</a>
       </div>
 
       <div class="card shadow-sm">
         <div class="card-body p-4">
-          <form method="post" novalidate>
+          <form method="post" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
-
-            {% if form.non_field_errors %}
-              <div class="alert alert-danger" role="alert">
-                {{ form.non_field_errors }}
-              </div>
-            {% endif %}
+            {{ form.latitude }}
+            {{ form.longitude }}
 
             <div class="row g-3">
               <div class="col-12">
@@ -31,8 +27,32 @@
               </div>
 
               <div class="col-12">
+                <label class="form-label" for="{{ form.cover_image.id_for_label }}">Cover Image</label>
+                <input
+                  class="form-control"
+                  type="file"
+                  id="{{ form.cover_image.id_for_label }}"
+                  name="{{ form.cover_image.name }}"
+                  accept="image/*"
+                >
+                <div class="form-text">Upload a cover image to make your event more attractive.</div>
+
+                {% if form.cover_image.errors %}
+                  <div class="text-danger small mt-1">{{ form.cover_image.errors }}</div>
+                {% endif %}
+
+                {% if form.instance.cover_image %}
+                  <img
+                    src="{{ form.instance.cover_image.url }}"
+                    class="mt-2 rounded"
+                    style="max-width: 200px;"
+                  >
+                {% endif %}
+              </div>
+
+              <div class="col-12">
                 <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
-                <textarea class="form-control" rows="4" id="{{ form.description.id_for_label }}" name="{{ form.description.name }}">{{ form.description.value|default:'' }}</textarea>
+                <textarea class="form-control" rows="5" id="{{ form.description.id_for_label }}" name="{{ form.description.name }}">{{ form.description.value|default:'' }}</textarea>
                 {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors }}</div>{% endif %}
               </div>
 
@@ -57,19 +77,32 @@
 
               <div class="col-12">
                 <label class="form-label" for="{{ form.location_name.id_for_label }}">Location name</label>
-                <input class="form-control" id="{{ form.location_name.id_for_label }}" name="{{ form.location_name.name }}" value="{{ form.location_name.value|default:'' }}">
+                <input class="form-control" id="{{ form.location_name.id_for_label }}" name="{{ form.location_name.name }}" value="{{ form.location_name.value|default:'' }}" placeholder="e.g. University of Glasgow Library">
                 {% if form.location_name.errors %}<div class="text-danger small mt-1">{{ form.location_name.errors }}</div>{% endif %}
               </div>
+            </div>
 
-              <div class="col-12 col-md-6">
-                <label class="form-label" for="{{ form.latitude.id_for_label }}">Latitude</label>
-                <input class="form-control" id="{{ form.latitude.id_for_label }}" name="{{ form.latitude.name }}" value="{{ form.latitude.value|default:'' }}" placeholder="55.8721">
-                {% if form.latitude.errors %}<div class="text-danger small mt-1">{{ form.latitude.errors }}</div>{% endif %}
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label" for="{{ form.longitude.id_for_label }}">Longitude</label>
-                <input class="form-control" id="{{ form.longitude.id_for_label }}" name="{{ form.longitude.name }}" value="{{ form.longitude.value|default:'' }}" placeholder="-4.2890">
-                {% if form.longitude.errors %}<div class="text-danger small mt-1">{{ form.longitude.errors }}</div>{% endif %}
+            <div class="card shadow-sm mt-4">
+              <div class="card-body">
+                <h2 class="h5 mb-2">Choose event location</h2>
+                <p class="text-muted small mb-3">
+                  Click the map, drag the marker, or use your current location.
+                </p>
+
+                {% if GOOGLE_MAPS_API_KEY %}
+                  <div id="event-map" class="rounded border"></div>
+                  <div class="small text-muted mt-2" id="selected-coords">
+                    No coordinates selected yet.
+                  </div>
+
+                  <button type="button" class="btn btn-outline-secondary btn-sm mt-3" id="use-my-location">
+                    Use my current location
+                  </button>
+                {% else %}
+                  <div class="alert alert-warning mb-0">
+                    Google Maps is not configured yet. You can still fill in the location name, but the interactive map is unavailable.
+                  </div>
+                {% endif %}
               </div>
             </div>
 
@@ -81,3 +114,107 @@
   </div>
 {% endblock %}
 
+{% block scripts %}
+  {% if GOOGLE_MAPS_API_KEY %}
+    <script>
+      let eventMap;
+      let eventMarker;
+
+      function initEventMap() {
+        const latInput = document.getElementById("id_latitude");
+        const lngInput = document.getElementById("id_longitude");
+        const locationInput = document.getElementById("id_location_name");
+        const coordsText = document.getElementById("selected-coords");
+        const useMyLocationBtn = document.getElementById("use-my-location");
+        const mapEl = document.getElementById("event-map");
+
+        if (!mapEl || !latInput || !lngInput) {
+          return;
+        }
+
+        const defaultCenter = { lat: 55.8721, lng: -4.2890 };
+
+        const existingLat = parseFloat(latInput.value);
+        const existingLng = parseFloat(lngInput.value);
+
+        const startPosition = (!isNaN(existingLat) && !isNaN(existingLng))
+          ? { lat: existingLat, lng: existingLng }
+          : defaultCenter;
+
+        eventMap = new google.maps.Map(mapEl, {
+          center: startPosition,
+          zoom: 15,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+        });
+
+        eventMarker = new google.maps.Marker({
+          position: startPosition,
+          map: eventMap,
+          draggable: true,
+          title: "Event location",
+        });
+
+        function updatePosition(lat, lng) {
+          latInput.value = lat.toFixed(6);
+          lngInput.value = lng.toFixed(6);
+          coordsText.textContent = `Selected: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+          eventMarker.setPosition({ lat: lat, lng: lng });
+          eventMap.panTo({ lat: lat, lng: lng });
+        }
+
+        updatePosition(startPosition.lat, startPosition.lng);
+
+        eventMap.addListener("click", function (e) {
+          if (!e.latLng) return;
+          updatePosition(e.latLng.lat(), e.latLng.lng());
+        });
+
+        eventMarker.addListener("dragend", function (e) {
+          if (!e.latLng) return;
+          updatePosition(e.latLng.lat(), e.latLng.lng());
+        });
+
+        if (useMyLocationBtn) {
+          useMyLocationBtn.addEventListener("click", function () {
+            if (!navigator.geolocation) {
+              coordsText.textContent = "Geolocation is not supported in this browser.";
+              return;
+            }
+
+            coordsText.textContent = "Getting your current location...";
+
+            navigator.geolocation.getCurrentPosition(
+              function (position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                updatePosition(lat, lng);
+
+                if (locationInput && !locationInput.value.trim()) {
+                  locationInput.value = "Current selected location";
+                }
+              },
+              function () {
+                coordsText.textContent = "Could not get your current location. You can still place the marker manually.";
+              },
+              {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0,
+              }
+            );
+          });
+        }
+      }
+
+      window.initEventMap = initEventMap;
+    </script>
+
+    <script
+      async
+      defer
+      src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initEventMap">
+    </script>
+  {% endif %}
+{% endblock %}

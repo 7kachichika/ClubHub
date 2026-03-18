@@ -15,6 +15,7 @@ class EventForm(forms.ModelForm):
         model = Event
         fields = [
             "title",
+            "cover_image",
             "description",
             "start_at",
             "capacity",
@@ -24,6 +25,9 @@ class EventForm(forms.ModelForm):
         ]
         widgets = {
             "start_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "cover_image": forms.ClearableFileInput(attrs={"class": "form-control"}),
+            "latitude": forms.HiddenInput(),
+            "longitude": forms.HiddenInput(),
         }
 
     def _parse_tag_names(self) -> list[str]:
@@ -50,4 +54,3 @@ class EventForm(forms.ModelForm):
 
 class CheckinForm(forms.Form):
     ticket_code = forms.UUIDField(help_text="Paste the UUID ticket code.")
-
