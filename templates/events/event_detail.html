@@ -35,6 +35,8 @@
     </div>
   </div>
 
+
+  
   <div class="row g-3">
     <div class="col-12 col-lg-7">
       <div class="card shadow-sm card-hover">
@@ -44,101 +46,129 @@
         </div>
       </div>
 
-      <div class="card shadow-sm card-hover mt-3">
-        <div class="card-body">
-          <h2 class="h5 mb-2">Location</h2>
+      <div class="card-body d-flex flex-column">
+        <h5 class="card-title mb-1">
+          <a href="{% url 'event_detail' e.id %}" class="text-decoration-none text-dark">
+            {{ e.title }}
+          </a>
+        </h5>
 
-          {% if event.location_name %}
-            <p class="text-muted mb-3">
-              <i class="bi bi-geo-alt" aria-hidden="true"></i>
-              {{ event.location_name }}
-            </p>
+        <div class="text-muted small mb-2">
+          <div>
+            <i class="bi bi-calendar-event" aria-hidden="true"></i>
+            {{ e.start_at|date:"M d, H:i" }}
+          </div>
+          <div>
+            <i class="bi bi-geo-alt" aria-hidden="true"></i>
+            {% if e.location_name %}{{ e.location_name }}{% else %}Location TBC{% endif %}
+          </div>
+        </div>
+
+        <p class="card-text event-desc mb-2">
+          {{ e.description|default:"(No description)"|truncatechars:140 }}
+        </p>
+
+        {% with used=e.confirmed_count total=e.capacity %}
+          {% if total %}
+            {% widthratio used total 100 as pct %}
+            <div class="progress event-progress mb-1">
+              <div
+                class="progress-bar {% if pct >= 80 %}bg-danger{% elif pct >= 50 %}bg-warning{% else %}bg-success{% endif %}"
+                style="width: {{ pct }}%;"
+              ></div>
+            </div>
           {% endif %}
+        {% endwith %}
 
-          {% if GOOGLE_MAPS_API_KEY and event.latitude and event.longitude %}
-            <div class="ratio ratio-16x9 rounded overflow-hidden border">
-              <iframe
-                title="Event location map"
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"
-                style="border:0;"
-                src="https://www.google.com/maps/embed/v1/place?key={{ GOOGLE_MAPS_API_KEY }}&q={{ event.latitude }},{{ event.longitude }}&zoom=15">
-              </iframe>
-            </div>
+        <div class="small text-muted mb-2">
+          {{ e.confirmed_count }} / {{ e.capacity }} confirmed
+        </div>
 
-            <div class="mt-3">
-              <a
-                class="btn btn-outline-secondary btn-sm"
-                href="https://www.google.com/maps?q={{ event.latitude }},{{ event.longitude }}"
-                target="_blank"
-                rel="noopener noreferrer">
-                Open in Google Maps
-              </a>
-            </div>
-          {% elif GOOGLE_MAPS_API_KEY and event.location_name %}
-            <div class="ratio ratio-16x9 rounded overflow-hidden border">
-              <iframe
-                title="Event location map"
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"
-                style="border:0;"
-                src="https://www.google.com/maps/embed/v1/place?key={{ GOOGLE_MAPS_API_KEY }}&q={{ event.location_name|urlencode }}">
-              </iframe>
-            </div>
-          {% else %}
-            <p class="text-muted mb-0">Location TBC</p>
-          {% endif %}
+        {% if e.matched_tags %}
+          <div class="small text-primary mb-1">
+            Because you like:
+            {% for t in e.matched_tags|slice:":2" %}
+              {{ t }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="event-tags mt-2">
+          {% for t in e.tags.all %}
+            <span class="badge bg-secondary me-1 mb-1">{{ t.name }}</span>
+          {% empty %}
+            <span class="badge text-bg-light text-muted">No tags</span>
+          {% endfor %}
+        </div>
+
+        <div class="event-organizer mt-auto pt-3">
+          <i class="bi bi-person-circle" aria-hidden="true"></i>
+          <span class="ms-2">{{ e.organizer.user.username }}</span>
         </div>
       </div>
     </div>
 
     <div class="col-12 col-lg-5">
       <div class="card shadow-sm card-hover">
-        <div class="card-body">
-          <h2 class="h5 mb-3">Your action</h2>
+        <div class="card-body d-flex flex-column">
+          <h5 class="card-title mb-1">
+            <a href="{% url 'event_detail' e.id %}" class="text-decoration-none text-dark">
+              {{ e.title }}
+            </a>
+          </h5>
 
-          {% if not user.is_authenticated %}
-            <p class="text-muted">Please log in as a Student to book or join the waitlist.</p>
-            <a class="btn btn-primary" href="{% url 'login' %}">Login</a>
-          {% elif user|user_is_student %}
-            {% if student_ticket %}
-              <div class="alert alert-secondary mb-3" role="alert">
-                You already have a ticket: <strong>{{ student_ticket.get_status_display }}</strong>
+          <div class="text-muted small mb-2">
+            <div>
+              <i class="bi bi-calendar-event" aria-hidden="true"></i>
+              {{ e.start_at|date:"M d, H:i" }}
+            </div>
+            <div>
+              <i class="bi bi-geo-alt" aria-hidden="true"></i>
+              {% if e.location_name %}{{ e.location_name }}{% else %}Location TBC{% endif %}
+            </div>
+          </div>
+
+          <p class="card-text event-desc mb-2">
+            {{ e.description|default:"(No description)"|truncatechars:140 }}
+          </p>
+
+          {% with used=e.confirmed_count total=e.capacity %}
+            {% if total %}
+              {% widthratio used total 100 as pct %}
+              <div class="progress event-progress mb-1">
+                <div
+                  class="progress-bar {% if pct >= 80 %}bg-danger{% elif pct >= 50 %}bg-warning{% else %}bg-success{% endif %}"
+                  style="width: {{ pct }}%;"
+                ></div>
               </div>
-            {% else %}
-              <form method="post" action="{% url 'book_event' event.id %}">
-                {% csrf_token %}
-                {% if capacity_available %}
-                  <button class="btn btn-primary w-100" type="submit">
-                    <i class="bi bi-ticket-perforated" aria-hidden="true"></i>
-                    <span class="ms-1">Book seat</span>
-                  </button>
-                {% else %}
-                  <button class="btn btn-warning w-100" type="submit">
-                    <i class="bi bi-hourglass-split" aria-hidden="true"></i>
-                    <span class="ms-1">Join waitlist</span>
-                  </button>
-                {% endif %}
-              </form>
             {% endif %}
+          {% endwith %}
 
-            <hr class="my-3">
+          <div class="small text-muted mb-2">
+            {{ e.confirmed_count }} / {{ e.capacity }} confirmed
+          </div>
 
-            <form method="post" action="{% url 'toggle_favorite' event.id %}">
-              {% csrf_token %}
-              <button class="btn btn-outline-secondary w-100" type="submit" aria-label="Toggle favorite">
-                {% if is_favorited %}
-                  <i class="bi bi-star-fill" aria-hidden="true"></i>
-                  <span class="ms-1">Unfavorite</span>
-                {% else %}
-                  <i class="bi bi-star" aria-hidden="true"></i>
-                  <span class="ms-1">Favorite</span>
-                {% endif %}
-              </button>
-            </form>
-          {% else %}
-            <p class="text-muted mb-0">Students can book or favorite events. Switch role on the login page.</p>
+          {% if e.matched_tags %}
+            <div class="small text-primary mb-1">
+              Because you like:
+              {% for t in e.matched_tags|slice:":2" %}
+                {{ t }}{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            </div>
           {% endif %}
+
+          <div class="event-tags mt-2">
+            {% for t in e.tags.all %}
+              <span class="badge bg-secondary me-1 mb-1">{{ t.name }}</span>
+            {% empty %}
+              <span class="badge text-bg-light text-muted">No tags</span>
+            {% endfor %}
+          </div>
+
+          <div class="event-organizer mt-auto pt-3">
+            <i class="bi bi-person-circle" aria-hidden="true"></i>
+            <span class="ms-2">{{ e.organizer.user.username }}</span>
+          </div>
         </div>
       </div>
     </div>

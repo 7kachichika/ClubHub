@@ -182,7 +182,7 @@
                             {% widthratio used total 100 as pct %}
                             <div class="progress event-progress mb-1">
                               <div
-                                class="progress-bar {% if pct > 80 %}bg-danger{% elif pct > 50 %}bg-warning{% else %}bg-success{% endif %}"
+                                class="progress-bar {% if pct >= 80 %}bg-danger{% elif pct >= 50 %}bg-warning{% else %}bg-success{% endif %}
                                 style="width: {{ pct }}%;"
                               ></div>
                             </div>
@@ -290,8 +290,8 @@
                       <div class="progress event-progress mb-1">
                         <div
                           class="progress-bar
-                          {% if pct > 80 %}bg-danger
-                          {% elif pct > 50 %}bg-warning
+                          {% if pct >= 80 %}bg-danger
+                          {% elif pct >= 50 %}bg-warning
                           {% else %}bg-success{% endif %}"
                           style="width: {{ pct }}%;">
                         </div>

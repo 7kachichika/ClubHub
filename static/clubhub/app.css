@@ -435,9 +435,14 @@ body {
 .event-organizer {
   display: flex;
   align-items: center;
-  color: #6c757d;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #334155;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .event-organizer i {
   flex-shrink: 0;
+  font-size: 1.05rem;
+  color: #64748b;
 }
