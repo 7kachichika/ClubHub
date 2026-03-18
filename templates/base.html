@@ -11,62 +11,200 @@
     <link href="{% static 'clubhub/app.css' %}" rel="stylesheet">
     {% block head %}{% endblock %}
   </head>
-  <body class="bg-body-tertiary">
+  <body
+    class="bg-body-tertiary"
+    data-favorite="{{ favorite_only|default:0|yesno:'1,0' }}"
+  >
+    <header class="site-header sticky-top">
+      <nav class="navbar navbar-expand-lg site-navbar">
+        <div class="container">
+          <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="{% url 'event_list' %}">
+            <span class="brand-icon rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+              <i class="bi bi-people-fill" aria-hidden="true"></i>
+            </span>
+            <span>UofG ClubHub</span>
+          </a>
 
-        <header class="site-header sticky-top">
-          <nav class="navbar navbar-expand-lg navbar-dark bg-dark site-navbar">
-            <div class="container">
-              <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="{% url 'event_list' %}">
-                <span class="rounded-circle d-inline-flex align-items-center justify-content-center bg-light text-dark" style="width: 28px; height: 28px;">
-                  <i class="bi bi-people-fill" aria-hidden="true"></i>
-                </span>
-                <span>
-                  UofG ClubHub
-                  <!--
-                  <span class="d-block small fw-normal text-secondary" style="line-height: 1;">Campus events, one hub.</span>
-                   -->
-                </span>
-              </a>
-              <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-              </button>
-              <div class="collapse navbar-collapse" id="nav">
-                <ul class="navbar-nav me-lg-3 mb-2 mb-lg-0">
-                  <!--  
-                  <li class="nav-item"><a class="nav-link" href="{% url 'event_list' %}">Home</a></li>
-                   -->
-                  {% if user.is_authenticated and user|user_is_student %}
-                    <li class="nav-item"><a class="nav-link" href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
-                  {% endif %}
-                  {% if user.is_authenticated and user|user_is_organizer %}
-                    <li class="nav-item"><a class="nav-link" href="{% url 'organizer_dashboard' %}">Organizer Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'create_event' %}">Create Event</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'organizer_checkin' %}">Check-in</a></li>
-                  {% endif %}
-                </ul>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
 
-  {% block nav_search %}
-    <div class="navbar-search-shell mx-lg-3 my-3 my-lg-0 flex-grow-1 d-none d-lg-block"></div>
-  {% endblock %}
+          <div class="collapse navbar-collapse" id="nav">
+            <div class="nav-primary-shell me-lg-3 mb-2 mb-lg-0">
+              <ul class="navbar-nav nav-primary-list">
+                {% if user.is_authenticated and user|user_is_student %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'student_dashboard' %}">Dashboard</a>
+                  </li>
+                {% endif %}
 
-  <ul class="navbar-nav ms-lg-3 ms-auto align-items-lg-center">
-    {% if user.is_authenticated %}
-      <li class="nav-item d-flex align-items-center">
-        <span class="nav-link nav-user-greeting pe-lg-2">Hi, {{ user.username }}</span>
-      </li>
-      <li class="nav-item d-flex align-items-center">
-        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
-      </li>
-    {% else %}
-      <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
-      <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">Sign up</a></li>
-    {% endif %}
-  </ul>
-</div>
+                {% if user.is_authenticated and user|user_is_organizer %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'organizer_dashboard' %}">Dashboard</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'create_event' %}">Create Event</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'organizer_checkin' %}">Check-in</a>
+                  </li>
+                {% endif %}
+              </ul>
             </div>
-          </nav>
 
-        </header>
+            {% block nav_search %}
+              <div class="navbar-search-shell mx-lg-3 my-3 my-lg-0 flex-grow-1 d-none d-lg-block">
+                <form
+                  method="get"
+                  action="{% url 'event_list' %}"
+                  class="navbar-search-form"
+                  id="navbar-global-search"
+                  aria-label="Search and filter events"
+                >
+                  <div class="navbar-search-wrap">
+                    <button
+                      class="btn navbar-search-trigger"
+                      type="button"
+                      id="global-toolbar-toggle"
+                      aria-expanded="{% if request.GET.tag or request.GET.favorite or request.GET.start or request.GET.end %}true{% else %}false{% endif %}"
+                      aria-controls="global-toolbar-filter-panel"
+                      aria-label="Open filters"
+                    >
+                      <i class="bi bi-sliders" aria-hidden="true"></i>
+                    </button>
+
+                    <input
+                      class="form-control navbar-search-input"
+                      type="text"
+                      id="global-q"
+                      name="q"
+                      value="{{ request.GET.q|default:'' }}"
+                      placeholder="Search events..."
+                      autocomplete="off"
+                    >
+
+                    <button class="btn btn-primary navbar-search-submit" type="submit">
+                      Search
+                    </button>
+                  </div>
+
+                  <div
+                    id="global-toolbar-filter-panel"
+                    class="toolbar-floating-panel {% if request.GET.tag or request.GET.favorite or request.GET.start or request.GET.end %}is-open{% endif %}"
+                  >
+                    <div class="toolbar-floating-panel-inner">
+
+                      <div class="toolbar-section">
+                        <div class="toolbar-section-label">Tags</div>
+                        <div class="d-flex flex-wrap gap-2">
+                          <a
+                            class="btn btn-sm {% if not request.GET.tag %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                            href="?q={{ request.GET.q|default:''|urlencode }}{% if request.GET.favorite %}&favorite=1{% endif %}{% if request.GET.start %}&start={{ request.GET.start|urlencode }}{% endif %}{% if request.GET.end %}&end={{ request.GET.end|urlencode }}{% endif %}"
+                          >
+                            All tags
+                          </a>
+                          {% if tags %}
+                            {% for t in tags %}
+                              <a
+                                class="btn btn-sm {% if request.GET.tag == t.name %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                                href="?q={{ request.GET.q|default:''|urlencode }}&tag={{ t.name|urlencode }}{% if request.GET.favorite %}&favorite=1{% endif %}{% if request.GET.start %}&start={{ request.GET.start|urlencode }}{% endif %}{% if request.GET.end %}&end={{ request.GET.end|urlencode }}{% endif %}"
+                              >
+                                {{ t.name }}
+                              </a>
+                            {% endfor %}
+                          {% else %}
+                            <span class="small text-muted">Tag filters are available on the home page.</span>
+                          {% endif %}
+                        </div>
+                      </div>
+
+                      <div class="toolbar-section">
+                        <div class="toolbar-section-label">Favorites</div>
+                        <div class="d-flex flex-wrap gap-2">
+                          <a
+                            class="btn btn-sm {% if request.GET.favorite %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                            href="?q={{ request.GET.q|default:''|urlencode }}{% if request.GET.tag %}&tag={{ request.GET.tag|urlencode }}{% endif %}{% if request.GET.start %}&start={{ request.GET.start|urlencode }}{% endif %}{% if request.GET.end %}&end={{ request.GET.end|urlencode }}{% endif %}&favorite=1"
+                          >
+                            Only my favorites
+                          </a>
+                          <a
+                            class="btn btn-sm {% if not request.GET.favorite %}btn-outline-secondary{% else %}btn-outline-primary{% endif %}"
+                            href="?q={{ request.GET.q|default:''|urlencode }}{% if request.GET.tag %}&tag={{ request.GET.tag|urlencode }}{% endif %}{% if request.GET.start %}&start={{ request.GET.start|urlencode }}{% endif %}{% if request.GET.end %}&end={{ request.GET.end|urlencode }}{% endif %}"
+                          >
+                            Show all events
+                          </a>
+                        </div>
+                      </div>
+
+                      <div class="toolbar-section">
+                        <div class="toolbar-section-label">Date</div>
+                        <div class="row g-2 align-items-end">
+                          {% if request.GET.tag %}
+                            <input type="hidden" name="tag" value="{{ request.GET.tag }}">
+                          {% endif %}
+                          {% if request.GET.favorite %}
+                            <input type="hidden" name="favorite" value="1">
+                          {% endif %}
+
+                          <div class="col-12 col-md-6">
+                            <label class="form-label mb-1" for="global-start">From</label>
+                            <input
+                              class="form-control"
+                              type="datetime-local"
+                              id="global-start"
+                              name="start"
+                              value="{{ request.GET.start|default:'' }}"
+                            >
+                          </div>
+
+                          <div class="col-12 col-md-6">
+                            <label class="form-label mb-1" for="global-end">To</label>
+                            <input
+                              class="form-control"
+                              type="datetime-local"
+                              id="global-end"
+                              name="end"
+                              value="{{ request.GET.end|default:'' }}"
+                            >
+                          </div>
+
+                          <div class="col-12 d-flex gap-2 pt-1">
+                            <button class="btn btn-primary" type="submit">Apply filters</button>
+                            <a class="btn btn-outline-secondary" href="{% url 'event_list' %}">Clear</a>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </form>
+              </div>
+            {% endblock %}
+
+            <ul class="navbar-nav ms-lg-3 ms-auto align-items-lg-center">
+              {% if user.is_authenticated %}
+                <li class="nav-item d-flex align-items-center">
+                  <span class="nav-link nav-user-greeting pe-lg-2">Hi, {{ user.username }}</span>
+                </li>
+                <li class="nav-item">
+                  <div class="nav-auth-chip d-flex align-items-center">
+                    <a class="nav-link nav-auth-link" href="{% url 'logout' %}">Logout</a>
+                  </div>
+                </li>
+              {% else %}
+                <li class="nav-item">
+                  <div class="nav-auth-chip d-flex align-items-center">
+                    <a class="nav-link nav-auth-link" href="{% url 'login' %}">Login</a>
+                    <span class="nav-auth-divider"></span>
+                    <a class="nav-link nav-auth-link" href="{% url 'register' %}">Sign up</a>
+                  </div>
+                </li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </header>
 
     <main class="container py-4">
       {% if messages %}
@@ -91,8 +229,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     {% block scripts %}{% endblock %}
-
     <script src="{% static 'clubhub/maps.js' %}"></script>
     <script src="{% static 'clubhub/filters.js' %}"></script>
-    <body data-favorite="{{ favorite_only|default:0|yesno:'1,0' }}">  </body>
+  </body>
 </html>
