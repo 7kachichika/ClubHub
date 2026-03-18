@@ -241,3 +241,72 @@ body {
 .card-body .small {
   font-size: 0.8rem;
 }
+
+.site-header {
+  z-index: 1030;
+  box-shadow: 0 2px 14px rgba(15, 23, 42, 0.08);
+}
+
+.site-navbar {
+  z-index: 1031;
+}
+
+.page-toolbar {
+  backdrop-filter: blur(10px);
+}
+
+.toolbar-panel {
+  padding: 0.25rem 0;
+}
+
+.toolbar-search {
+  min-width: 0;
+}
+
+.search-history-panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  z-index: 1040;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.search-history-empty {
+  padding: 0.75rem 1rem;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.search-history-item {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: #fff;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+}
+
+.search-history-item:hover {
+  background: #f8f9fa;
+}
+
+body {
+  scroll-padding-top: 9rem;
+}
+
+@media (max-width: 991.98px) {
+  .search-history-panel {
+    position: static;
+    margin-top: 0.5rem;
+  }
+
+  body {
+    scroll-padding-top: 7rem;
+  }
+}

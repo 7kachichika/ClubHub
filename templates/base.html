@@ -12,48 +12,54 @@
     {% block head %}{% endblock %}
   </head>
   <body class="bg-body-tertiary">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container">
-        <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="{% url 'event_list' %}">
-          <span class="rounded-circle d-inline-flex align-items-center justify-content-center bg-light text-dark" style="width: 28px; height: 28px;">
-            <i class="bi bi-people-fill" aria-hidden="true"></i>
-          </span>
-          <span>
-            UofG ClubHub
-            <span class="d-block small fw-normal text-secondary" style="line-height: 1;">Campus events, one hub.</span>
-          </span>
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="nav">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item"><a class="nav-link" href="{% url 'event_list' %}">Home</a></li>
-            {% if user.is_authenticated and user|user_is_student %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
-            {% endif %}
-            {% if user.is_authenticated and user|user_is_organizer %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'organizer_dashboard' %}">Organizer Dashboard</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'create_event' %}">Create Event</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'organizer_checkin' %}">Check-in</a></li>
-            {% endif %}
-          </ul>
-          <ul class="navbar-nav ms-auto align-items-lg-center">
-            {% if user.is_authenticated %}
-              <li class="nav-item d-flex align-items-center">
-                <span class="nav-link nav-user-greeting pe-lg-2">Hi, {{ user.username }}</span>
-              </li>
-              <li class="nav-item d-flex align-items-center">
-                <a class="nav-link" href="{% url 'logout' %}">Logout</a>
-              </li>
-            {% else %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">Sign up</a></li>
-            {% endif %}
-          </ul>
-        </div>
-      </div>
-    </nav>
+
+        <header class="site-header sticky-top">
+          <nav class="navbar navbar-expand-lg navbar-dark bg-dark site-navbar">
+            <div class="container">
+              <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="{% url 'event_list' %}">
+                <span class="rounded-circle d-inline-flex align-items-center justify-content-center bg-light text-dark" style="width: 28px; height: 28px;">
+                  <i class="bi bi-people-fill" aria-hidden="true"></i>
+                </span>
+                <span>
+                  UofG ClubHub
+                  <span class="d-block small fw-normal text-secondary" style="line-height: 1;">Campus events, one hub.</span>
+                </span>
+              </a>
+              <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+              </button>
+              <div class="collapse navbar-collapse" id="nav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                  <li class="nav-item"><a class="nav-link" href="{% url 'event_list' %}">Home</a></li>
+                  {% if user.is_authenticated and user|user_is_student %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
+                  {% endif %}
+                  {% if user.is_authenticated and user|user_is_organizer %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'organizer_dashboard' %}">Organizer Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'create_event' %}">Create Event</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'organizer_checkin' %}">Check-in</a></li>
+                  {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto align-items-lg-center">
+                  {% if user.is_authenticated %}
+                    <li class="nav-item d-flex align-items-center">
+                      <span class="nav-link nav-user-greeting pe-lg-2">Hi, {{ user.username }}</span>
+                    </li>
+                    <li class="nav-item d-flex align-items-center">
+                      <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    </li>
+                  {% else %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">Sign up</a></li>
+                  {% endif %}
+                </ul>
+              </div>
+            </div>
+          </nav>
+
+          {% block page_toolbar %}
+          {% endblock %}
+        </header>
 
     <main class="container py-4">
       {% if messages %}
