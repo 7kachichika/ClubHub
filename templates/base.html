@@ -93,6 +93,6 @@
     {% block scripts %}{% endblock %}
 
     <script src="{% static 'clubhub/maps.js' %}"></script>
-
-  </body>
+    <script src="{% static 'clubhub/filters.js' %}"></script>
+    <body data-favorite="{{ favorite_only|default:0|yesno:'1,0' }}">  </body>
 </html>
