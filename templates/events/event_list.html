@@ -105,7 +105,12 @@
         </div>
       </div>
 
-      <div id="search-history-panel" class="search-history-panel d-none"></div>
+      <div
+        id="search-history-panel"
+        class="search-history-panel d-none"
+        role="listbox"
+        aria-label="Recent searches"
+      ></div>
     </form>
   </div>
 {% endblock %}
@@ -220,7 +225,13 @@
       <h2 class="h5 mb-0">Available events</h2>
     </div>
 
-    <div id="client-filter-empty" class="alert alert-info d-none mb-3" role="alert">
+    <div
+      id="client-filter-empty"
+      class="alert alert-info d-none mb-3"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
       No matching events found. Try a broader search or clear the filters.
     </div>
 

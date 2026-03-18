@@ -38,7 +38,10 @@ document.addEventListener("DOMContentLoaded", function () {
     historyPanel.innerHTML = items
       .map(
         (item) =>
-          `<button type="button" class="search-history-item" data-history-item="${item.replace(/"/g, "&quot;")}">${item}</button>`
+          `<button type="button" class="search-history-item" aria-label="Search for ${item.replace(
+            /"/g,
+            "&quot;"
+          )}" data-history-item="${item.replace(/"/g, "&quot;")}">${item}</button>`
       )
       .join("");
   }
@@ -57,14 +60,34 @@ document.addEventListener("DOMContentLoaded", function () {
   function initToolbar(toggle, panel) {
     if (!toggle || !panel) return;
 
+    let lastFocused = null;
+
+    function getFirstFocusable(container) {
+      const selector =
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      return container.querySelector(selector);
+    }
+
     function openToolbar() {
+      lastFocused = document.activeElement;
       panel.classList.add("is-open");
       toggle.setAttribute("aria-expanded", "true");
+      panel.setAttribute("aria-hidden", "false");
+
+      const first = getFirstFocusable(panel);
+      if (first) {
+        window.setTimeout(() => first.focus(), 0);
+      }
     }
 
     function closeToolbar() {
       panel.classList.remove("is-open");
       toggle.setAttribute("aria-expanded", "false");
+      panel.setAttribute("aria-hidden", "true");
+
+      if (lastFocused && typeof lastFocused.focus === "function") {
+        lastFocused.focus();
+      }
     }
 
     function toggleToolbar() {
@@ -97,6 +120,8 @@ document.addEventListener("DOMContentLoaded", function () {
         closeToolbar();
       }
     });
+
+    panel.setAttribute("aria-hidden", panel.classList.contains("is-open") ? "false" : "true");
   }
 
   function initHomeSearch() {

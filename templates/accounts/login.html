@@ -13,7 +13,7 @@
             {% csrf_token %}
 
             {% if form.non_field_errors %}
-              <div class="alert alert-danger" role="alert">
+              <div class="alert alert-danger" role="alert" id="login-form-errors" tabindex="-1">
                 {{ form.non_field_errors }}
               </div>
             {% endif %}
@@ -27,9 +27,13 @@
                 id="{{ form.username.id_for_label }}"
                 value="{{ form.username.value|default:'' }}"
                 autocomplete="username"
+                {% if form.username.errors %}aria-invalid="true"{% endif %}
+                aria-describedby="username-help{% if form.username.errors %} username-error{% endif %}{% if form.non_field_errors %} login-form-errors{% endif %}"
+                autofocus
                 required
               >
-              {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors }}</div>{% endif %}
+              <div class="form-text" id="username-help">Use the username you registered with.</div>
+              {% if form.username.errors %}<div class="text-danger small mt-1" id="username-error">{{ form.username.errors }}</div>{% endif %}
             </div>
 
             <div class="mb-3">
@@ -40,9 +44,11 @@
                 name="{{ form.password.name }}"
                 id="{{ form.password.id_for_label }}"
                 autocomplete="current-password"
+                {% if form.password.errors %}aria-invalid="true"{% endif %}
+                aria-describedby="{% if form.password.errors %}password-error{% endif %}{% if form.non_field_errors %} login-form-errors{% endif %}"
                 required
               >
-              {% if form.password.errors %}<div class="text-danger small mt-1">{{ form.password.errors }}</div>{% endif %}
+              {% if form.password.errors %}<div class="text-danger small mt-1" id="password-error">{{ form.password.errors }}</div>{% endif %}
             </div>
 
             <button class="btn btn-primary w-100" type="submit">Login</button>
