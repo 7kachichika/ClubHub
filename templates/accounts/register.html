@@ -20,6 +20,7 @@
 
             <div class="mb-3">
               <label class="form-label" for="{{ form.username.id_for_label }}">Username</label>
+                            
               <input
                 class="form-control"
                 type="text"
@@ -27,9 +28,15 @@
                 id="{{ form.username.id_for_label }}"
                 value="{{ form.username.value|default:'' }}"
                 autocomplete="username"
+                {% if form.username.errors %}aria-invalid="true"{% endif %}
+                aria-describedby="{% if form.username.errors %}username-error {% endif %}username-help"
+                autofocus
                 required
               >
-              {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors }}</div>{% endif %}
+              <div class="form-text" id="username-help">Letters, digits and @/./+/-/_ only.</div>
+              {% if form.username.errors %}
+                <div class="text-danger small mt-1" id="username-error" role="alert">{{ form.username.errors }}</div>
+              {% endif %}
             </div>
 
             <div class="mb-3">
@@ -47,16 +54,22 @@
 
             <div class="mb-3">
               <label class="form-label" for="{{ form.password1.id_for_label }}">Password</label>
+              
               <input
                 class="form-control"
                 type="password"
                 name="{{ form.password1.name }}"
                 id="{{ form.password1.id_for_label }}"
                 autocomplete="new-password"
+                {% if form.password1.errors %}aria-invalid="true"{% endif %}
+                {% if form.password1.errors %}aria-describedby="password1-error"{% endif %}
                 required
               >
-              {% if form.password1.errors %}<div class="text-danger small mt-1">{{ form.password1.errors }}</div>{% endif %}
-            </div>
+              {% if form.password1.errors %}
+                <div class="text-danger small mt-1" id="password1-error" role="alert">{{ form.password1.errors }}</div>
+              {% endif %}
+
+              </div>
 
             <div class="mb-3">
               <label class="form-label" for="{{ form.password2.id_for_label }}">Confirm password</label>
@@ -66,9 +79,14 @@
                 name="{{ form.password2.name }}"
                 id="{{ form.password2.id_for_label }}"
                 autocomplete="new-password"
+                {% if form.password2.errors %}aria-invalid="true"{% endif %}
+                {% if form.password2.errors %}aria-describedby="password2-error"{% endif %}
                 required
               >
-              {% if form.password2.errors %}<div class="text-danger small mt-1">{{ form.password2.errors }}</div>{% endif %}
+              {% if form.password2.errors %}
+                <div class="text-danger small mt-1" id="password2-error" role="alert">{{ form.password2.errors }}</div>
+              {% endif %}
+                          
             </div>
 
             <fieldset class="mb-3">

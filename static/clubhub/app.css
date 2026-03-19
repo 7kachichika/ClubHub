@@ -23,6 +23,26 @@
   --ch-search-height: 48px;
 }
 
+.skip-link {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2000;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.75rem;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  color: var(--ch-primary);
+  box-shadow: 0 10px 28px rgba(28, 52, 60, 0.12);
+  transform: translateY(-200%);
+  transition: transform 120ms ease;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 html,
 
 body {

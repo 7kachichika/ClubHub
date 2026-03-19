@@ -38,7 +38,10 @@ document.addEventListener("DOMContentLoaded", function () {
     historyPanel.innerHTML = items
       .map(
         (item) =>
-          `<button type="button" class="search-history-item" data-history-item="${item.replace(/"/g, "&quot;")}">${item}</button>`
+          `<button type="button" class="search-history-item" aria-label="Search for ${item.replace(
+            /"/g,
+            "&quot;"
+          )}" data-history-item="${item.replace(/"/g, "&quot;")}">${item}</button>`
       )
       .join("");
   }
@@ -57,14 +60,34 @@ document.addEventListener("DOMContentLoaded", function () {
   function initToolbar(toggle, panel) {
     if (!toggle || !panel) return;
 
+    let lastFocused = null;
+
+    function getFirstFocusable(container) {
+      const selector =
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      return container.querySelector(selector);
+    }
+
     function openToolbar() {
+      lastFocused = document.activeElement;
       panel.classList.add("is-open");
       toggle.setAttribute("aria-expanded", "true");
+      panel.setAttribute("aria-hidden", "false");
+
+      const first = getFirstFocusable(panel);
+      if (first) {
+        window.setTimeout(() => first.focus(), 0);
+      }
     }
 
     function closeToolbar() {
       panel.classList.remove("is-open");
       toggle.setAttribute("aria-expanded", "false");
+      panel.setAttribute("aria-hidden", "true");
+
+      if (lastFocused && typeof lastFocused.focus === "function") {
+        lastFocused.focus();
+      }
     }
 
     function toggleToolbar() {
@@ -97,6 +120,8 @@ document.addEventListener("DOMContentLoaded", function () {
         closeToolbar();
       }
     });
+
+    panel.setAttribute("aria-hidden", panel.classList.contains("is-open") ? "false" : "true");
   }
 
   function initHomeSearch() {
@@ -202,7 +227,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function initGlobalSearch() {
     const qInput = document.getElementById("global-q");
-    const historyPanel = null;
     const toolbarToggle = document.getElementById("global-toolbar-toggle");
     const toolbarPanel = document.getElementById("global-toolbar-filter-panel");
     const searchForm = document.getElementById("navbar-global-search");
@@ -211,15 +235,75 @@ document.addEventListener("DOMContentLoaded", function () {
 
     initToolbar(toolbarToggle, toolbarPanel);
 
-    qInput?.addEventListener("focus", function () {
-      // 非主页只保留 toolbar，不显示 history panel
-    });
-
     searchForm.addEventListener("submit", function () {
       if (qInput) saveHistory(qInput.value);
     });
   }
 
+  // -----------------------------------------------------------------------
+  // AJAX favorite toggle — event_detail page only
+  // -----------------------------------------------------------------------
+  function getCsrfToken() {
+    const match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? match[1] : "";
+  }
+
+  function initFavoriteToggle() {
+    const btn   = document.getElementById("favorite-btn");
+    if (!btn) return;
+
+    const label = document.getElementById("favorite-btn-label");
+    const toast = document.getElementById("favorite-toast");
+    const icon  = btn.querySelector("i");
+
+    function showToast(msg) {
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.remove("d-none");
+      clearTimeout(btn._toastTimer);
+      btn._toastTimer = setTimeout(() => toast.classList.add("d-none"), 3000);
+    }
+
+    function applyState(favorited) {
+      btn.classList.toggle("btn-dark", favorited);
+      btn.classList.toggle("btn-outline-dark", !favorited);
+      if (icon) {
+        icon.classList.toggle("bi-heart-fill", favorited);
+        icon.classList.toggle("bi-heart", !favorited);
+      }
+      if (label) label.textContent = favorited ? "Favorited" : "Add to favorites";
+      btn.setAttribute("aria-pressed", String(favorited));
+      btn.setAttribute("aria-label", favorited ? "Remove from favorites" : "Add to favorites");
+    }
+
+    btn.addEventListener("click", function () {
+      btn.disabled = true;
+
+      fetch(btn.dataset.url, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": getCsrfToken(),
+        },
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          applyState(data.favorited);
+          showToast(data.message);
+        })
+        .catch(function () {
+          showToast("Could not update favorites — please try again.");
+        })
+        .finally(function () {
+          btn.disabled = false;
+        });
+    });
+  }
+
   initHomeSearch();
   initGlobalSearch();
+  initFavoriteToggle();
 });
