@@ -136,85 +136,7 @@
               data-favorited="{% if user.is_authenticated and e.id in favorite_event_ids %}1{% else %}0{% endif %}"
               data-organizer="{{ e.organizer.user.username|lower }}"
             >
-              <div class="card shadow-sm h-100 position-relative">
-                <span class="badge bg-primary position-absolute top-0 start-0 m-2">
-                  Recommended
-                </span>
-                <span class="badge bg-dark position-absolute top-0 end-0 m-2">
-                  {{ e.confirmed_count }}/{{ e.capacity }}
-                </span>
-
-                <a class="text-decoration-none" href="{% url 'event_detail' e.id %}">
-                  {% if e.cover_image %}
-                    <img src="{{ e.cover_image.url }}" class="card-img-top event-cover" alt="{{ e.title }}">
-                  {% else %}
-                    <div class="event-cover-placeholder d-flex align-items-center justify-content-center">
-                      <span class="text-muted small">No Image</span>
-                    </div>
-                  {% endif %}
-                </a>
-
-                <div class="card-body">
-                  <h5 class="card-title mb-1">
-                    <a href="{% url 'event_detail' e.id %}" class="text-decoration-none text-dark">
-                      {{ e.title }}
-                    </a>
-                  </h5>
-
-                  <div class="text-muted small mb-2">
-                    <div>
-                      <i class="bi bi-calendar-event" aria-hidden="true"></i>
-                      {{ e.start_at|date:"M d, H:i" }}
-                    </div>
-                    <div>
-                      <i class="bi bi-geo-alt" aria-hidden="true"></i>
-                      {% if e.location_name %}{{ e.location_name }}{% else %}Location TBC{% endif %}
-                    </div>
-                  </div>
-
-                  <p class="card-text event-desc mb-2">
-                    {{ e.description|default:"(No description)"|truncatechars:140 }}
-                  </p>
-
-                  <div class="event-organizer text-muted small mb-2">
-                    <i class="bi bi-person-circle" aria-hidden="true"></i>
-                    <span class="ms-1">By {{ e.organizer.user.username }}</span>
-                  </div>
-
-                  {% with used=e.confirmed_count total=e.capacity %}
-                    {% if total %}
-                      {% widthratio used total 100 as pct %}
-                      <div class="progress event-progress mb-1">
-                        <div
-                          class="progress-bar {% if pct >= 80 %}bg-danger{% elif pct >= 50 %}bg-warning{% else %}bg-success{% endif %}"
-                          style="width: {{ pct }}%;"
-                        ></div>
-                      </div>
-                    {% endif %}
-                  {% endwith %}
-
-                  <div class="small text-muted mb-2">
-                    {{ e.confirmed_count }} / {{ e.capacity }} confirmed
-                  </div>
-
-                  {% if e.matched_tags %}
-                    <div class="small text-primary mb-1">
-                      Because you like:
-                      {% for t in e.matched_tags|slice:":2" %}
-                        {{ t }}{% if not forloop.last %}, {% endif %}
-                      {% endfor %}
-                    </div>
-                  {% endif %}
-
-                  <div class="event-tags mt-2">
-                    {% for t in e.tags.all %}
-                      <span class="badge bg-secondary me-1 mb-1">{{ t.name }}</span>
-                    {% empty %}
-                      <span class="badge text-bg-light text-muted">No tags</span>
-                    {% endfor %}
-                  </div>
-                </div>
-              </div>
+              {% include "events/_event_card.html" with is_recommended=True %}
             </div>
           {% endfor %}
         </div>
@@ -242,75 +164,12 @@
           data-title="{{ e.title|lower }}"
           data-description="{{ e.description|default:''|lower }}"
           data-location="{% if e.location_name %}{{ e.location_name|lower }}{% endif %}"
-          data-tags="{% for tag in e.tags.all %}{{ tag.name|lower }} {% endfor %}"
+          data-tags="{% for t in e.tags.all %}{{ t.name|lower }} {% endfor %}"
           data-start="{{ e.start_at|date:'c' }}"
           data-favorited="{% if user.is_authenticated and e.id in favorite_event_ids %}1{% else %}0{% endif %}"
+          data-organizer="{{ e.organizer.user.username|lower }}"
         >
-          <div class="card shadow-sm h-100 position-relative">
-            <span class="badge bg-dark position-absolute top-0 end-0 m-2">
-              {{ e.confirmed_count }}/{{ e.capacity }}
-            </span>
-
-            {% if e.cover_image %}
-              <img src="{{ e.cover_image.url }}" class="card-img-top event-cover" alt="{{ e.title }}">
-            {% else %}
-              <div class="event-cover-placeholder d-flex align-items-center justify-content-center">
-                <span class="text-muted small">No Image</span>
-              </div>
-            {% endif %}
-
-            <div class="card-body">
-              <h5 class="card-title mb-1">
-                <a href="{% url 'event_detail' e.id %}" class="text-decoration-none text-dark">
-                  {{ e.title }}
-                </a>
-              </h5>
-
-              <div class="text-muted small mb-2">
-                <div>
-                  <i class="bi bi-calendar-event" aria-hidden="true"></i>
-                  {{ e.start_at|date:"M d, H:i" }}
-                </div>
-                <div>
-                  <i class="bi bi-geo-alt" aria-hidden="true"></i>
-                  {% if e.location_name %}{{ e.location_name }}{% else %}Location TBC{% endif %}
-                </div>
-              </div>
-
-              <p class="card-text event-desc mb-2">
-                {{ e.description|truncatechars:140 }}
-              </p>
-
-              <div class="event-organizer text-muted small mb-2">
-                <i class="bi bi-person-circle" aria-hidden="true"></i>
-                <span class="ms-1">By {{ e.organizer.user.username }}</span>
-              </div>
-
-              {% with used=e.confirmed_count total=e.capacity %}
-                {% if total %}
-                  {% widthratio used total 100 as pct %}
-                  <div class="progress event-progress mb-1">
-                    <div
-                      class="progress-bar {% if pct >= 80 %}bg-danger {% elif pct >= 50 %}bg-warning {% else %}bg-success{% endif %}"
-                      style="width: {{ pct }}%;"
-                    ></div>
-                  </div>
-                {% endif %}
-              {% endwith %}
-
-              <div class="small text-muted mb-2">
-                👥 {{ e.confirmed_count }} / {{ e.capacity }} confirmed
-              </div>
-
-              <div class="event-tags mt-2">
-                {% for tag in e.tags.all %}
-                  <span class="badge bg-secondary me-1 mb-1">{{ tag.name }}</span>
-                {% empty %}
-                  <span class="badge text-bg-light text-muted">No tags</span>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
+          {% include "events/_event_card.html" with is_recommended=True %}
         </div>
       {% endfor %}
     </div>

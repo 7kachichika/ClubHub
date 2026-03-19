@@ -143,15 +143,29 @@
             </form>
           {% endif %}
 
-          <form method="post" action="{% url 'toggle_favorite' event.id %}" class="mt-2">
-            {% csrf_token %}
-            <button
-              type="submit"
-              class="btn w-100 {% if is_favorited %}btn-dark{% else %}btn-outline-dark{% endif %}"
-            >
-              {% if is_favorited %}Favorited{% else %}Add to favorites{% endif %}
-            </button>
-          </form>
+          <div class="mt-2">
+  <button
+    id="favorite-btn"
+    type="button"
+    class="btn w-100 {% if is_favorited %}btn-dark{% else %}btn-outline-dark{% endif %}"
+    data-url="{% url 'toggle_favorite' event.id %}"
+    data-favorited="{% if is_favorited %}1{% else %}0{% endif %}"
+    aria-pressed="{% if is_favorited %}true{% else %}false{% endif %}"
+    aria-label="{% if is_favorited %}Remove from favorites{% else %}Add to favorites{% endif %}"
+  >
+    <i class="bi {% if is_favorited %}bi-heart-fill{% else %}bi-heart{% endif %} me-1" aria-hidden="true"></i>
+    <span id="favorite-btn-label">{% if is_favorited %}Favorited{% else %}Add to favorites{% endif %}</span>
+  </button>
+
+  <div
+    id="favorite-toast"
+    class="alert alert-info py-1 px-2 mt-2 small d-none"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  ></div>
+          </div>
+          
         {% elif not user.is_authenticated %}
           <div class="alert alert-info mb-0" role="alert">
             Please <a href="{% url 'login' %}">log in</a> as a student to book or save this event.

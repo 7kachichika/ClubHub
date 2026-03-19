@@ -346,9 +346,11 @@ def toggle_favorite(request, event_id: int):
 
     rebuild_and_save_student_preferences(student)
 
-    wants_json = "application/json" in (request.headers.get("Accept") or "")
-    if wants_json:
-        return JsonResponse({"favorited": favorited})
+    message = f'Added "{event.title}" to favorites.' if favorited else "Removed from favorites."
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({"favorited": favorited, "message": message})
+
+    messages.success(request, message)
     return redirect("event_detail", event_id=event_id)
 
 @student_required

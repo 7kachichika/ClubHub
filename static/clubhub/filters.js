@@ -232,6 +232,71 @@ document.addEventListener("DOMContentLoaded", function () {
     const toolbarPanel = document.getElementById("global-toolbar-filter-panel");
     const searchForm = document.getElementById("navbar-global-search");
 
+    // -----------------------------------------------------------------------
+  // AJAX favorite toggle — event_detail page only
+  // -----------------------------------------------------------------------
+  function getCsrfToken() {
+    const match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? match[1] : "";
+  }
+
+  function initFavoriteToggle() {
+    const btn   = document.getElementById("favorite-btn");
+    if (!btn) return;
+
+    const label = document.getElementById("favorite-btn-label");
+    const toast = document.getElementById("favorite-toast");
+    const icon  = btn.querySelector("i");
+
+    function showToast(msg) {
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.remove("d-none");
+      clearTimeout(btn._toastTimer);
+      btn._toastTimer = setTimeout(() => toast.classList.add("d-none"), 3000);
+    }
+
+    function applyState(favorited) {
+      btn.classList.toggle("btn-dark", favorited);
+      btn.classList.toggle("btn-outline-dark", !favorited);
+      if (icon) {
+        icon.classList.toggle("bi-heart-fill", favorited);
+        icon.classList.toggle("bi-heart", !favorited);
+      }
+      if (label) label.textContent = favorited ? "Favorited" : "Add to favorites";
+      btn.setAttribute("aria-pressed", String(favorited));
+      btn.setAttribute("aria-label", favorited ? "Remove from favorites" : "Add to favorites");
+    }
+
+    btn.addEventListener("click", function () {
+      btn.disabled = true;
+
+      fetch(btn.dataset.url, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": getCsrfToken(),
+        },
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          applyState(data.favorited);
+          showToast(data.message);
+        })
+        .catch(function () {
+          showToast("Could not update favorites — please try again.");
+        })
+        .finally(function () {
+          btn.disabled = false;
+        });
+    });
+  }
+
+  initFavoriteToggle();
+
     if (!searchForm) return;
 
     initToolbar(toolbarToggle, toolbarPanel);
