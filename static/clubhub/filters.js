@@ -227,12 +227,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function initGlobalSearch() {
     const qInput = document.getElementById("global-q");
-    const historyPanel = null;
     const toolbarToggle = document.getElementById("global-toolbar-toggle");
     const toolbarPanel = document.getElementById("global-toolbar-filter-panel");
     const searchForm = document.getElementById("navbar-global-search");
 
-    // -----------------------------------------------------------------------
+    if (!searchForm) return;
+
+    initToolbar(toolbarToggle, toolbarPanel);
+
+    searchForm.addEventListener("submit", function () {
+      if (qInput) saveHistory(qInput.value);
+    });
+  }
+
+  // -----------------------------------------------------------------------
   // AJAX favorite toggle — event_detail page only
   // -----------------------------------------------------------------------
   function getCsrfToken() {
@@ -295,21 +303,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  initFavoriteToggle();
-
-    if (!searchForm) return;
-
-    initToolbar(toolbarToggle, toolbarPanel);
-
-    qInput?.addEventListener("focus", function () {
-      // 非主页只保留 toolbar，不显示 history panel
-    });
-
-    searchForm.addEventListener("submit", function () {
-      if (qInput) saveHistory(qInput.value);
-    });
-  }
-
   initHomeSearch();
   initGlobalSearch();
+  initFavoriteToggle();
 });

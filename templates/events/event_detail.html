@@ -105,12 +105,21 @@
         {% with used=confirmed_count total=event.capacity %}
           {% if total %}
             {% widthratio used total 100 as pct %}
-            <div class="progress event-progress mb-2">
-              <div
-                class="progress-bar {% if pct >= 80 %}bg-danger{% elif pct >= 50 %}bg-warning{% else %}bg-success{% endif %}"
-                style="width: {{ pct }}%;"
-              ></div>
-            </div>
+            
+            <div class="progress event-progress mb-2"
+                  role="img"
+                  aria-label="Capacity: {{ confirmed_count }} of {{ event.capacity }} places filled">
+                <div
+                  class="progress-bar {% if pct >= 80 %}bg-danger{% elif pct >= 50 %}bg-warning{% else %}bg-success{% endif %}"
+                  role="progressbar"
+                  style="width: {{ pct }}%;"
+                  aria-valuenow="{{ pct }}"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-label="{{ confirmed_count }} of {{ event.capacity }} places confirmed"
+                ></div>
+              </div>
+
           {% endif %}
         {% endwith %}
 

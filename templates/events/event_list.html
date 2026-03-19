@@ -169,7 +169,7 @@
           data-favorited="{% if user.is_authenticated and e.id in favorite_event_ids %}1{% else %}0{% endif %}"
           data-organizer="{{ e.organizer.user.username|lower }}"
         >
-          {% include "events/_event_card.html" with is_recommended=True %}
+          {% include "events/_event_card.html" with is_recommended=False %}
         </div>
       {% endfor %}
     </div>
